@@ -6,11 +6,11 @@ Derived from `docs/appname-prd.md` architecture and UX model.
 
 ## Architecture
 
-- Angular 20 standalone components.
-- Angular Router with one route per tool under `src/app/pages/tools/`.
+- Angular 21 standalone components.
+- Angular Router with one route per tool under `src/app/features/tools/`.
 - Signals for local UI and job state.
 - OnPush change detection.
-- Static build output deployable from Angular CLI production build.
+- Static build output deployable from Angular CLI 21 production build run via Bun scripts.
 
 ## Components
 
