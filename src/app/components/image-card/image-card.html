@@ -1,0 +1,40 @@
+<article class="image-card" [class.image-card--done]="job().status === 'done'" [class.image-card--error]="job().status === 'error'">
+  <div class="image-card__preview" aria-hidden="true">
+    {{ job().inputFile.name.slice(0, 1).toUpperCase() }}
+  </div>
+
+  <div class="image-card__body">
+    <div class="image-card__header">
+      <div>
+        <h3>{{ job().inputFile.name }}</h3>
+        @if (job().width && job().height) {
+          <p>{{ job().width }} x {{ job().height }} px</p>
+        }
+      </div>
+      <span class="image-card__status">{{ statusLabel() }}</span>
+    </div>
+
+    <dl class="image-card__stats">
+      <div>
+        <dt>Input</dt>
+        <dd>{{ inputSize() }}</dd>
+      </div>
+      <div>
+        <dt>Output</dt>
+        <dd>{{ outputSize() }}</dd>
+      </div>
+      <div>
+        <dt>Savings</dt>
+        <dd>{{ savings() }}</dd>
+      </div>
+    </dl>
+
+    @if (job().outputName) {
+      <p class="image-card__output">Output: {{ job().outputName }}</p>
+    }
+
+    @if (job().error) {
+      <p class="image-card__error">{{ job().error }}</p>
+    }
+  </div>
+</article>

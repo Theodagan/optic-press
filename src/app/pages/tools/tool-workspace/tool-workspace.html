@@ -1,0 +1,43 @@
+<main class="workspace-shell">
+  <a routerLink="/" class="back-link">Back to tools</a>
+
+  <section class="workspace-hero" aria-labelledby="workspace-title">
+    <p class="eyebrow">Tool workspace</p>
+    <h1 id="workspace-title">{{ tool().name }}</h1>
+    <p>{{ tool().description }}</p>
+  </section>
+
+  <div class="workspace-grid">
+    <section class="workspace-primary" aria-label="Image input and results">
+      <app-upload-zone (filesSelected)="addFiles($event)" />
+
+      @if (jobs().length > 0) {
+        <div class="job-list" aria-label="Selected images">
+          @for (job of jobs(); track job.id) {
+            <app-image-card [job]="job" />
+          }
+        </div>
+      } @else {
+        <p class="empty-state">Upload images to preview the {{ tool().name }} workflow.</p>
+      }
+    </section>
+
+    <aside class="workspace-panel" aria-label="Workspace controls">
+      <app-output-options>
+        <div class="option-placeholder">
+          <label>
+            Quality preset
+            <select>
+              <option>Balanced</option>
+              <option>Smallest file</option>
+              <option>Highest quality</option>
+            </select>
+          </label>
+          <p>Tool-specific settings will be added by each image processing feature.</p>
+        </div>
+      </app-output-options>
+
+      <app-download-bar [jobs]="jobs()" (zipRequested)="requestZip()" />
+    </aside>
+  </div>
+</main>

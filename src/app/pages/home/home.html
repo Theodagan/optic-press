@@ -1,0 +1,17 @@
+<main class="home-shell">
+  <section class="hero" aria-labelledby="home-title">
+    <p class="eyebrow">Browser-only image tools</p>
+    <h1 id="home-title">OPTICPRESS</h1>
+    <p>Prepare images quickly without uploads, accounts, or server-side processing.</p>
+  </section>
+
+  <section class="tool-grid" aria-label="Image tools">
+    @for (tool of tools; track tool.slug) {
+      <a class="tool-card" [routerLink]="tool.slug">
+        <span class="tool-icon" aria-hidden="true">{{ tool.icon }}</span>
+        <span class="tool-name">{{ tool.name }}</span>
+        <span class="tool-description">{{ tool.description }}</span>
+      </a>
+    }
+  </section>
+</main>

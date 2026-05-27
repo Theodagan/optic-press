@@ -1,0 +1,15 @@
+<section class="output-options">
+  <button type="button" class="output-options__summary" [attr.aria-expanded]="isOpen()" (click)="toggle()">
+    <span>
+      <strong>{{ title() }}</strong>
+      <small>{{ description() }}</small>
+    </span>
+    <span class="output-options__chevron" aria-hidden="true">{{ isOpen() ? '−' : '+' }}</span>
+  </button>
+
+  @if (isOpen()) {
+    <div class="output-options__content">
+      <ng-content />
+    </div>
+  }
+</section>
