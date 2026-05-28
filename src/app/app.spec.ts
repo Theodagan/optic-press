@@ -52,7 +52,7 @@ describe('App shell routes', () => {
       const text = harness.routeNativeElement?.textContent ?? '';
 
       expect(text).toContain(tool.name);
-      expect(text).toContain('Back to tools');
+      expect(text).toContain('OPTICPRESS');
       expect(text).toContain('Output options');
     });
   }
