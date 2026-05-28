@@ -1,17 +1,35 @@
+<header class="app-header">
+  <div class="app-header__inner">
+    <a class="app-logo" routerLink="/" aria-label="OPTICPRESS home">
+      <svg class="app-logo__mark" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="2" y="5" width="24" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+        <circle cx="10" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3 20l5-5 3 3 5-5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="app-logo__text">OPTICPRESS</span>
+    </a>
+    <span class="app-header__tag">code</span>
+  </div>
+</header>
+
 <main class="home-shell">
   <section class="hero" aria-labelledby="home-title">
-    <p class="eyebrow">Browser-only image tools</p>
-    <h1 id="home-title">OPTICPRESS</h1>
-    <p>Prepare images quickly without uploads, accounts, or server-side processing.</p>
+    <p class="hero__eyebrow">Browser-only image tools</p>
+    <h1 id="home-title" class="hero__title">Prepare images for the web.</h1>
+    <p class="hero__subtitle">Fast, private, runs entirely in your browser.</p>
   </section>
 
   <section class="tool-grid" aria-label="Image tools">
     @for (tool of tools; track tool.slug) {
       <a class="tool-card" [routerLink]="tool.slug">
-        <span class="tool-icon" aria-hidden="true">{{ tool.icon }}</span>
-        <span class="tool-name">{{ tool.name }}</span>
-        <span class="tool-description">{{ tool.description }}</span>
+        <span class="tool-card__icon" aria-hidden="true">{{ tool.icon }}</span>
+        <span class="tool-card__name">{{ tool.name }}</span>
+        <span class="tool-card__description">{{ tool.description }}</span>
       </a>
     }
   </section>
+
+  <footer class="home-footer">
+    All processing happens in your browser. No uploads.
+  </footer>
 </main>

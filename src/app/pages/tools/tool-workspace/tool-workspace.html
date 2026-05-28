@@ -1,10 +1,25 @@
-<main class="workspace-shell">
-  <a routerLink="/" class="back-link">Back to tools</a>
+<header class="app-header">
+  <div class="app-header__inner">
+    <a class="app-logo" routerLink="/" aria-label="OPTICPRESS home">
+      <svg class="app-logo__mark" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="2" y="5" width="24" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+        <circle cx="10" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3 20l5-5 3 3 5-5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="app-logo__text">OPTICPRESS</span>
+    </a>
+    <span class="ws-breadcrumb">
+      <span class="ws-breadcrumb__sep">/</span>
+      <span class="ws-breadcrumb__current">{{ tool().name }}</span>
+    </span>
+  </div>
+</header>
 
+<main class="workspace-shell">
   <section class="workspace-hero" aria-labelledby="workspace-title">
-    <p class="eyebrow">Tool workspace</p>
-    <h1 id="workspace-title">{{ tool().name }}</h1>
-    <p>{{ tool().description }}</p>
+    <p class="workspace-hero__eyebrow">code</p>
+    <h1 id="workspace-title" class="workspace-hero__title">{{ tool().name }}</h1>
+    <p class="workspace-hero__subtitle">{{ tool().description }}</p>
   </section>
 
   <div class="workspace-grid">

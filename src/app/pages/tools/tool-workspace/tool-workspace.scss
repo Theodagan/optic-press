@@ -3,95 +3,157 @@
   min-height: 100vh;
 }
 
-.workspace-shell {
-  min-height: 100vh;
-  padding: 2rem clamp(1rem, 4vw, 4rem);
-  background:
-    radial-gradient(circle at top right, rgba(79, 70, 229, 0.12), transparent 28rem),
-    #f8fafc;
+.app-header {
+  background: var(--ts-color-surface);
+  border-bottom: 1px solid var(--ts-color-border);
+  left: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.back-link {
-  color: #4f46e5;
-  font-weight: 700;
+.app-header__inner {
+  align-items: center;
+  display: flex;
+  gap: var(--ts-space-sm);
+  margin: 0 auto;
+  max-width: var(--ts-max-width);
+  padding: 0 var(--ts-gutter);
+}
+
+.app-logo {
+  align-items: center;
+  color: var(--ts-color-text);
+  display: flex;
+  font-size: 1rem;
+  font-weight: var(--ts-weight-extrabold);
+  gap: 0.5rem;
+  letter-spacing: -0.02em;
+  padding: var(--ts-space-sm) 0;
   text-decoration: none;
 }
 
+.app-logo__mark {
+  color: var(--ts-color-accent);
+}
+
+.ws-breadcrumb {
+  align-items: center;
+  color: var(--ts-color-text-muted);
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: var(--ts-weight-semibold);
+  gap: 0.5rem;
+}
+
+.ws-breadcrumb__sep {
+  color: var(--ts-color-border-strong);
+  font-weight: var(--ts-weight-medium);
+}
+
+.ws-breadcrumb__current {
+  color: var(--ts-color-text);
+}
+
+.workspace-shell {
+  margin: 0 auto;
+  max-width: var(--ts-max-width);
+  padding: var(--ts-space-lg) var(--ts-gutter) 6rem;
+}
+
 .workspace-hero {
-  margin-top: 3rem;
-  max-width: 48rem;
+  margin-bottom: var(--ts-space-lg);
 }
 
-.eyebrow {
-  color: #4f46e5;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.workspace-hero__eyebrow {
+  align-items: center;
+  background: var(--ts-color-surface-high);
+  border-radius: var(--ts-radius-default);
+  color: var(--ts-color-accent-dark);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: var(--ts-weight-semibold);
+  padding: 0.2rem 0.5rem;
 }
 
-h1 {
-  color: #111827;
-  font-size: clamp(2.5rem, 8vw, 5rem);
-  letter-spacing: -0.06em;
-  line-height: 1;
-  margin: 0.5rem 0 1rem;
+.workspace-hero__title {
+  color: var(--ts-color-text);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: var(--ts-weight-extrabold);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0.75rem 0 0.5rem;
 }
 
-p {
-  color: #4b5563;
-  font-size: 1.125rem;
-  line-height: 1.6;
+.workspace-hero__subtitle {
+  color: var(--ts-color-text-muted);
+  font-size: 1rem;
+  font-weight: var(--ts-weight-medium);
+  line-height: 1.5;
 }
 
 .workspace-grid {
-  align-items: start;
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
-  margin-top: 2rem;
+  gap: var(--ts-gutter);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
 }
 
 .workspace-primary,
 .workspace-panel,
 .job-list {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ts-space-sm);
 }
 
 .workspace-panel {
   position: sticky;
-  top: 1rem;
+  top: 4rem;
 }
 
 .empty-state {
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid #e5e7eb;
-  border-radius: 1rem;
-  padding: 1rem;
+  background: var(--ts-color-surface);
+  border: 1px solid var(--ts-color-border);
+  border-radius: var(--ts-radius-default);
+  color: var(--ts-color-text-muted);
+  font-size: 0.875rem;
+  padding: var(--ts-space-md);
+  text-align: center;
 }
 
 .option-placeholder {
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ts-space-sm);
 }
 
 label {
-  color: #111827;
-  display: grid;
-  font-weight: 800;
-  gap: 0.4rem;
+  color: var(--ts-color-text);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.875rem;
+  font-weight: var(--ts-weight-semibold);
+  gap: var(--ts-space-xs);
 }
 
 select {
-  border: 1px solid #d1d5db;
-  border-radius: 0.75rem;
-  color: #111827;
-  font: inherit;
-  padding: 0.75rem;
+  border: 1px solid var(--ts-color-border);
+  border-radius: var(--ts-radius-default);
+  color: var(--ts-color-text);
+  font-family: var(--ts-font);
+  font-size: 0.875rem;
+  font-weight: var(--ts-weight-medium);
+  height: 3rem;
+  padding: 0 var(--ts-space-sm);
 }
 
-@media (max-width: 58rem) {
+.option-placeholder p {
+  color: var(--ts-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 60rem) {
   .workspace-grid {
     grid-template-columns: 1fr;
   }
