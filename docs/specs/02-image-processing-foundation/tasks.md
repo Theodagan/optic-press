@@ -4,7 +4,7 @@
 2. Implement AVIF support detection utility. → needs: — [x]
 3. Implement size formatting and savings utilities. → needs: — [x]
 4. Implement shared image decode/draw/encode service. → needs: 1, 2 [x]
-5. Add resize dimension helpers with upscale prevention support. → needs: 1
+5. Add resize dimension helpers with upscale prevention support. → needs: 1 [x]
 6. Implement ZIP generation service with `jszip`. → needs: 1
 7. Add content detection helper for downsampled variance analysis. → needs: 4
 8. Add worker or OffscreenCanvas path for expensive processing. → needs: 4
