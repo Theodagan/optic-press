@@ -7,6 +7,7 @@ import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
 import { UploadZone } from '../../../components/upload-zone/upload-zone';
 import { ImageJob } from '../../../models/image-job';
+import { DEFAULT_SETTINGS } from '../../../models/processing-settings';
 import { ToolDefinition } from '../../../models/tool';
 
 @Component({
@@ -27,6 +28,7 @@ export class ToolWorkspace {
       id: crypto.randomUUID(),
       inputFile: file,
       status: 'queued' as const,
+      settings: DEFAULT_SETTINGS,
       inputBytes: file.size,
       outputName: this.outputNameFor(file.name),
     }));

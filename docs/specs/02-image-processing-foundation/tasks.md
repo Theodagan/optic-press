@@ -1,8 +1,8 @@
 # Image Processing Foundation Tasks
 
-1. Define shared image job, settings, preset, and output models. → needs: —
-2. Implement AVIF support detection utility. → needs: —
-3. Implement size formatting and savings utilities. → needs: —
+1. Define shared image job, settings, preset, and output models. → needs: — [x]
+2. Implement AVIF support detection utility. → needs: — [x]
+3. Implement size formatting and savings utilities. → needs: — [x]
 4. Implement shared image decode/draw/encode service. → needs: 1, 2
 5. Add resize dimension helpers with upscale prevention support. → needs: 1
 6. Implement ZIP generation service with `jszip`. → needs: 1
