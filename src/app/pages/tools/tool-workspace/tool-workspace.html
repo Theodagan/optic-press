@@ -39,18 +39,36 @@
 
     <aside class="workspace-panel" aria-label="Workspace controls">
       <app-output-options>
-        <div class="option-placeholder">
-          <label>
-            Quality preset
-            <select>
-              <option>Balanced</option>
-              <option>Smallest file</option>
-              <option>Highest quality</option>
-            </select>
-          </label>
-          <p>Tool-specific settings will be added by each image processing feature.</p>
-        </div>
+        @if (tool().slug === 'convert') {
+          <app-convert-controls
+            [settings]="convertSettings()"
+            (settingsChange)="onConvertSettingsChange($event)"
+          />
+        } @else {
+          <div class="option-placeholder">
+            <label>
+              Quality preset
+              <select>
+                <option>Balanced</option>
+                <option>Smallest file</option>
+                <option>Highest quality</option>
+              </select>
+            </label>
+            <p>Tool-specific settings will be added by each image processing feature.</p>
+          </div>
+        }
       </app-output-options>
+
+      @if (hasQueuedJobs()) {
+        <button
+          type="button"
+          class="workspace-process-btn"
+          [disabled]="isProcessing()"
+          (click)="processJobs()"
+        >
+          {{ isProcessing() ? 'Processing\u2026' : 'Process images' }}
+        </button>
+      }
 
       <app-download-bar [jobs]="jobs()" (zipRequested)="requestZip()" />
     </aside>

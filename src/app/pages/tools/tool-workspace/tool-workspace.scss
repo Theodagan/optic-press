@@ -162,3 +162,21 @@ select {
     position: static;
   }
 }
+
+.workspace-process-btn {
+  background: var(--ts-color-accent);
+  border: 0;
+  border-radius: var(--ts-radius-default);
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--ts-font);
+  font-size: 0.875rem;
+  font-weight: var(--ts-weight-semibold);
+  height: 3rem;
+  width: 100%;
+}
+
+.workspace-process-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
