@@ -18,8 +18,8 @@ export async function analyzeContent(
   const canvas = await service.drawToCanvas(source, { width: SAMPLE_SIZE, height: SAMPLE_SIZE });
 
   const ctx = (canvas instanceof OffscreenCanvas
-    ? canvas.getContext('2d')
-    : (canvas as HTMLCanvasElement).getContext('2d')) as CanvasRenderingContext2D | null;
+    ? canvas.getContext('2d') as OffscreenCanvasRenderingContext2D | null
+    : (canvas as HTMLCanvasElement).getContext('2d') as CanvasRenderingContext2D | null);
 
   if (!ctx) {
     return { variance: 0, isLowContent: true, luminanceMean: 0 };

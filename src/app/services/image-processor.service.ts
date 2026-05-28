@@ -31,7 +31,7 @@ export class ImageProcessorService {
       canvas.height = height;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
     if (!ctx) {
       throw new Error('Failed to get 2d context from canvas');
     }
