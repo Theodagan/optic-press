@@ -6,6 +6,6 @@
 4. Implement shared image decode/draw/encode service. → needs: 1, 2 [x]
 5. Add resize dimension helpers with upscale prevention support. → needs: 1 [x]
 6. Implement ZIP generation service with `jszip`. → needs: 1 [x]
-7. Add content detection helper for downsampled variance analysis. → needs: 4
-8. Add worker or OffscreenCanvas path for expensive processing. → needs: 4
+7. Add content detection helper for downsampled variance analysis. → needs: 4 [x]
+8. Add worker or OffscreenCanvas path for expensive processing. → needs: 4 [x]
 9. Add unit tests for utilities and core processor behavior. → needs: 2, 3, 4, 5, 6, 7

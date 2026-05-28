@@ -102,6 +102,72 @@ export class ImageProcessorService {
     }
   }
 
+  get isWorkerSupported(): boolean {
+    return typeof Worker !== 'undefined';
+  }
+
+  async processInWorker(file: File, settings: ImageProcessingSettings): Promise<Blob> {
+    if (!this.isWorkerSupported) {
+      return this.processMainThread(file, settings);
+    }
+
+    try {
+      const worker = new Worker(
+        new URL('../workers/image-processor.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+
+      const arrayBuffer = await file.arrayBuffer();
+      const mimeType = this.mimeTypeFor(settings.format);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        worker.onmessage = ({ data }: MessageEvent) => {
+          worker.terminate();
+          if (data.error) {
+            reject(new Error(data.error));
+            return;
+          }
+          resolve(new Blob([data.blob], { type: data.type }));
+        };
+        worker.onerror = (error) => {
+          worker.terminate();
+          reject(new Error(`Worker error: ${error.message}`));
+        };
+
+        worker.postMessage({
+          imageData: arrayBuffer,
+          width: settings.width,
+          height: settings.height,
+          format: mimeType,
+          quality: settings.quality / 100,
+        });
+      });
+
+      return settings.stripMetadata ? await this.stripMetadataViaRedraw(blob) : blob;
+    } catch {
+      return this.processMainThread(file, settings);
+    }
+  }
+
+  async processMainThread(file: File, settings: ImageProcessingSettings): Promise<Blob> {
+    const source = await this.loadImage(file);
+    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+
+    const dimensions = settings.width !== undefined || settings.height !== undefined
+      ? { width: settings.width ?? inputWidth, height: settings.height ?? inputHeight }
+      : { width: inputWidth, height: inputHeight };
+
+    const canvas = await this.drawToCanvas(source, dimensions);
+    const blob = await this.encode(canvas, settings);
+
+    if (source instanceof ImageBitmap) {
+      source.close();
+    }
+
+    return blob;
+  }
+
   private async loadImageFallback(file: File): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
