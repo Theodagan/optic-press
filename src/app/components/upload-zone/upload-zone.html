@@ -1,0 +1,26 @@
+<section
+  class="upload-zone"
+  [class.upload-zone--active]="isDragging()"
+  tabindex="0"
+  role="button"
+  aria-label="Upload images"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+  (paste)="onPaste($event)"
+>
+  <div class="upload-zone__content">
+    <span class="upload-zone__icon" aria-hidden="true">+</span>
+    <h2>Add images</h2>
+    <p>Drop image files here, paste from the clipboard, or choose files from your device.</p>
+
+    <label class="upload-zone__button">
+      Choose images
+      <input type="file" accept="image/*" multiple (change)="onFileInput($event)" />
+    </label>
+
+    @if (selectedCount() > 0) {
+      <p class="upload-zone__meta">{{ selectedCount() }} image(s) selected</p>
+    }
+  </div>
+</section>

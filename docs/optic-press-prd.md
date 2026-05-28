@@ -1,7 +1,7 @@
 # [OPTICPRESS] — Product Requirements Document
 
 **Version:** 3.0  
-**Stack:** Angular 20 · TypeScript · Canvas API · OffscreenCanvas · Web Workers  
+**Stack:** Angular 21 · TypeScript · Canvas API · OffscreenCanvas · Web Workers  
 **Deployment:** Static site (zero backend)  
 **Positioning:** Professional image tooling for web — task-based, not settings-based
 
@@ -217,7 +217,7 @@ src/app/
 **Routing:** Angular Router · one route per tool  
 **State:** Angular Signals · no NgRx  
 **Change detection:** OnPush  
-**Build:** Angular CLI 20 + Vite/ESBuild
+**Build:** Angular CLI 21 + Vite/ESBuild · Bun for local runtime/package scripts
 
 ---
 
@@ -225,8 +225,9 @@ src/app/
 
 | Package | Purpose |
 |---|---|
-| `@angular/core` ^20 | Framework |
-| `@angular/router` ^20 | Tool routing |
+| `@angular/core` ^21 | Framework |
+| `@angular/router` ^21 | Tool routing |
+| `bun` | Local runtime, package manager, and script runner |
 | `jszip` | ZIP generation |
 
 ---
