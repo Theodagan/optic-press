@@ -8,29 +8,21 @@
       <div>
         <h3>{{ job().inputFile.name }}</h3>
         @if (job().width && job().height) {
-          <p>{{ job().width }} x {{ job().height }} px</p>
+          <p class="image-card__dims">{{ job().width }} x {{ job().height }} px</p>
         }
       </div>
       <span class="image-card__status">{{ statusLabel() }}</span>
     </div>
 
-    <dl class="image-card__stats">
-      <div>
-        <dt>Input</dt>
-        <dd>{{ inputSize() }}</dd>
+    @if (job().status === 'done') {
+      <div class="image-card__results">
+        <span>{{ inputSize() }} <span class="image-card__arrow">&rarr;</span> {{ outputSize() }}</span>
+        <span class="image-card__savings">-{{ savings() === 'Pending' ? '--' : savings() }}</span>
       </div>
-      <div>
-        <dt>Output</dt>
-        <dd>{{ outputSize() }}</dd>
-      </div>
-      <div>
-        <dt>Savings</dt>
-        <dd>{{ savings() }}</dd>
-      </div>
-    </dl>
+    }
 
     @if (job().outputName) {
-      <p class="image-card__output">Output: {{ job().outputName }}</p>
+      <p class="image-card__output">{{ job().outputName }}</p>
     }
 
     @if (job().error) {

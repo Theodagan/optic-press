@@ -17,10 +17,6 @@ export class DownloadBar {
     this.jobs().filter((job) => job.status === 'done' && job.outputBlob),
   );
 
-  protected readonly inputSize = computed(() =>
-    this.formatBytes(this.completedJobs().reduce((total, job) => total + job.inputBytes, 0)),
-  );
-
   protected readonly outputSize = computed(() =>
     this.formatBytes(
       this.completedJobs().reduce((total, job) => total + (job.outputBytes ?? job.outputBlob?.size ?? 0), 0),

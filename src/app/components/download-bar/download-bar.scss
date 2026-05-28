@@ -1,59 +1,59 @@
 .download-bar {
   align-items: center;
-  background: #111827;
-  border-radius: 1.25rem;
-  box-shadow: 0 1.5rem 4rem rgba(15, 23, 42, 0.18);
-  color: #ffffff;
+  background: var(--ts-color-surface);
+  border: 1px solid var(--ts-color-border);
+  border-radius: var(--ts-radius-default);
+  box-shadow: var(--ts-shadow-card);
   display: flex;
-  gap: 1rem;
+  gap: var(--ts-space-sm);
   justify-content: space-between;
-  padding: 1rem;
+  padding: var(--ts-space-sm) var(--ts-space-md);
 }
 
 .download-bar__stats {
-  display: grid;
-  flex: 1;
-  gap: 1rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-dt {
-  color: #a5b4fc;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
+.download-bar__processed {
+  color: var(--ts-color-text);
+  font-size: 0.75rem;
+  font-weight: var(--ts-weight-semibold);
 }
 
-dd {
-  font-size: 1.125rem;
-  font-weight: 900;
-  margin: 0.2rem 0 0;
+.download-bar__savings {
+  color: var(--ts-color-green);
+  font-size: 0.75rem;
+  font-weight: var(--ts-weight-extrabold);
 }
 
 button {
-  background: #ffffff;
+  background: var(--ts-color-accent);
   border: 0;
-  border-radius: 999px;
-  color: #111827;
+  border-radius: var(--ts-radius-md);
+  color: #ffffff;
   cursor: pointer;
-  font: inherit;
-  font-weight: 900;
-  padding: 0.85rem 1.2rem;
+  font-family: var(--ts-font);
+  font-size: 0.8125rem;
+  font-weight: var(--ts-weight-semibold);
+  padding: 0.5rem 1rem;
+  white-space: nowrap;
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.4;
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 36rem) {
   .download-bar {
-    align-items: stretch;
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .download-bar__stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: center;
+    text-align: center;
   }
 }
