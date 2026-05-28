@@ -1,0 +1,118 @@
+import { Injectable } from '@angular/core';
+import type { ImageProcessingSettings } from '../models/processing-settings';
+import type { Dimensions } from '../models/dimensions';
+
+export type ImageSource = ImageBitmap | HTMLImageElement;
+export type CanvasLike = HTMLCanvasElement | OffscreenCanvas;
+
+@Injectable({ providedIn: 'root' })
+export class ImageProcessorService {
+  async loadImage(file: File): Promise<ImageSource> {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      return await this.loadImageFallback(file);
+    }
+  }
+
+  async drawToCanvas(
+    source: ImageSource,
+    dimensions?: Dimensions,
+  ): Promise<CanvasLike> {
+    const width = dimensions?.width ?? (source instanceof HTMLImageElement ? source.naturalWidth : source.width);
+    const height = dimensions?.height ?? (source instanceof HTMLImageElement ? source.naturalHeight : source.height);
+
+    const canvas = typeof OffscreenCanvas !== 'undefined'
+      ? new OffscreenCanvas(width, height)
+      : document.createElement('canvas');
+
+    if (canvas instanceof HTMLCanvasElement) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2d context from canvas');
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, width, height);
+
+    return canvas;
+  }
+
+  async encode(canvas: CanvasLike, settings: ImageProcessingSettings): Promise<Blob> {
+    const { format, quality, stripMetadata } = settings;
+    const mimeType = this.mimeTypeFor(format);
+
+    if (canvas instanceof OffscreenCanvas) {
+      const blob = await canvas.convertToBlob({ type: mimeType, quality: quality / 100 });
+      return stripMetadata ? await this.stripMetadataViaRedraw(blob) : blob;
+    }
+
+    const dataUrl = canvas.toDataURL(mimeType, quality / 100);
+    const response = await fetch(dataUrl);
+    let blob = await response.blob();
+
+    if (stripMetadata) {
+      blob = await this.stripMetadataViaRedraw(blob);
+    }
+
+    return blob;
+  }
+
+  private async stripMetadataViaRedraw(blob: Blob): Promise<Blob> {
+    const source = await createImageBitmap(blob);
+    const canvas = await this.drawToCanvas(source);
+    const result = canvas instanceof OffscreenCanvas
+      ? await canvas.convertToBlob({ type: blob.type })
+      : await this.canvasToBlob(canvas as HTMLCanvasElement, blob.type);
+
+    source.close();
+    return result;
+  }
+
+  private canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error(`Failed to encode canvas to ${mimeType}`));
+          }
+        },
+        mimeType,
+      );
+    });
+  }
+
+  private mimeTypeFor(format: ImageProcessingSettings['format']): string {
+    switch (format) {
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'avif':
+        return 'image/avif';
+    }
+  }
+
+  private async loadImageFallback(file: File): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image via fallback'));
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
+    });
+  }
+}
