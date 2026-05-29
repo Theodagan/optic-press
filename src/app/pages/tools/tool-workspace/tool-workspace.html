@@ -44,6 +44,11 @@
             [settings]="convertSettings()"
             (settingsChange)="onConvertSettingsChange($event)"
           />
+        } @else if (tool().slug === 'resize') {
+          <app-resize-controls
+            [settings]="resizeSettings()"
+            (settingsChange)="onResizeSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>

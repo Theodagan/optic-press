@@ -1,0 +1,109 @@
+<fieldset class="resize-controls__group">
+  <legend class="resize-controls__legend">Mode</legend>
+  <div class="resize-controls__mode-row">
+    @for (option of modeOptions; track option.value) {
+      <label class="resize-controls__radio-label">
+        <input
+          type="radio"
+          class="resize-controls__radio"
+          name="resize-mode"
+          [value]="option.value"
+          [checked]="settings().mode === option.value"
+          (change)="onModeChange($any($event.target).value)"
+        />
+        {{ option.label }}
+      </label>
+    }
+  </div>
+</fieldset>
+
+@if (settings().mode === 'maxDimension') {
+  <fieldset class="resize-controls__group">
+    <legend class="resize-controls__legend">Max dimension (px)</legend>
+    <input
+      type="number"
+      class="resize-controls__number-input"
+      min="1"
+      [value]="settings().maxDimension"
+      (input)="onMaxDimensionChange($any($event.target).value)"
+    />
+    <small class="resize-controls__hint">Longest edge will be capped to this value.</small>
+  </fieldset>
+} @else {
+  <fieldset class="resize-controls__group">
+    <legend class="resize-controls__legend">Dimensions (px)</legend>
+    <div class="resize-controls__dim-row">
+      <label class="resize-controls__dim-label">
+        Width
+        <input
+          type="number"
+          class="resize-controls__number-input"
+          min="1"
+          [value]="settings().width"
+          (input)="onWidthChange($any($event.target).value)"
+        />
+      </label>
+      <label class="resize-controls__dim-label">
+        Height
+        <input
+          type="number"
+          class="resize-controls__number-input"
+          min="1"
+          [value]="settings().height"
+          (input)="onHeightChange($any($event.target).value)"
+        />
+      </label>
+    </div>
+    @if (settings().aspectLocked) {
+      <small class="resize-controls__hint">Height will be derived from width to preserve aspect ratio.</small>
+    }
+  </fieldset>
+}
+
+<label class="resize-controls__checkbox-label">
+  <input
+    type="checkbox"
+    class="resize-controls__checkbox"
+    [checked]="settings().aspectLocked"
+    (change)="onAspectLockedChange($any($event.target).checked)"
+  />
+  Lock aspect ratio
+</label>
+
+<label class="resize-controls__checkbox-label">
+  <input
+    type="checkbox"
+    class="resize-controls__checkbox"
+    [checked]="settings().preventUpscale"
+    (change)="onPreventUpscaleChange($any($event.target).checked)"
+  />
+  Prevent upscale
+</label>
+
+<fieldset class="resize-controls__group">
+  <legend class="resize-controls__legend">Output format</legend>
+  <select
+    class="resize-controls__select"
+    [value]="settings().outputFormat"
+    (change)="onFormatChange($any($event.target).value)"
+  >
+    @for (format of formats(); track format) {
+      <option [value]="format">{{ formatLabels[format] }}</option>
+    }
+  </select>
+</fieldset>
+
+<fieldset class="resize-controls__group">
+  <legend class="resize-controls__legend">Quality</legend>
+  <div class="resize-controls__quality-row">
+    <input
+      type="range"
+      class="resize-controls__range"
+      min="1"
+      max="100"
+      [value]="settings().quality"
+      (input)="onQualityChange($any($event.target).value)"
+    />
+    <output class="resize-controls__quality-value">{{ settings().quality }}</output>
+  </div>
+</fieldset>
