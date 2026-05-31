@@ -1,0 +1,74 @@
+<fieldset class="compress-controls__group">
+  <legend class="compress-controls__legend">Output format</legend>
+  <select
+    class="compress-controls__select"
+    [value]="settings().format"
+    (change)="onFormatChange($any($event.target).value)"
+  >
+    @for (format of formats(); track format) {
+      <option [value]="format">{{ formatLabels[format] }}</option>
+    }
+  </select>
+</fieldset>
+
+<fieldset class="compress-controls__group">
+  <legend class="compress-controls__legend">Quality</legend>
+  <div class="compress-controls__quality-row">
+    <input
+      type="range"
+      class="compress-controls__range"
+      min="0"
+      max="100"
+      [value]="settings().quality"
+      (input)="onQualityChange($any($event.target).value)"
+    />
+    <output class="compress-controls__quality-value">{{ settings().quality }}</output>
+  </div>
+</fieldset>
+
+@if (showChroma()) {
+  <fieldset class="compress-controls__group">
+    <legend class="compress-controls__legend">Chroma subsampling</legend>
+    <select
+      class="compress-controls__select"
+      [value]="settings().chromaSubsampling"
+      (change)="onChromaChange($any($event.target).value)"
+    >
+      @for (option of chromaOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </fieldset>
+}
+
+@if (showBitDepth()) {
+  <fieldset class="compress-controls__group">
+    <legend class="compress-controls__legend">Bit depth</legend>
+    <select
+      class="compress-controls__select"
+      [value]="settings().bitDepth"
+      (change)="onBitDepthChange($any($event.target).value)"
+    >
+      @for (option of bitDepthOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </fieldset>
+}
+
+@if (showAlphaThreshold()) {
+  <fieldset class="compress-controls__group">
+    <legend class="compress-controls__legend">Alpha threshold</legend>
+    <div class="compress-controls__alpha-row">
+      <input
+        type="range"
+        class="compress-controls__range"
+        min="0"
+        max="255"
+        [value]="settings().alphaThreshold"
+        (input)="onAlphaThresholdChange($any($event.target).value)"
+      />
+      <output class="compress-controls__quality-value">{{ settings().alphaThreshold }}</output>
+    </div>
+  </fieldset>
+}
