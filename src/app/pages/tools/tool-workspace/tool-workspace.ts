@@ -5,20 +5,24 @@ import { ConvertControls } from '../../../components/convert-controls/convert-co
 import { DownloadBar } from '../../../components/download-bar/download-bar';
 import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
+import { ResizeControls } from '../../../components/resize-controls/resize-controls';
 import { UploadZone } from '../../../components/upload-zone/upload-zone';
 import type { ConvertSettings } from '../../../models/convert-settings';
 import { DEFAULT_CONVERT_SETTINGS } from '../../../models/convert-settings';
 import { ImageJob } from '../../../models/image-job';
 import type { ImageProcessingSettings } from '../../../models/processing-settings';
 import { DEFAULT_SETTINGS } from '../../../models/processing-settings';
+import type { ResizeSettings } from '../../../models/resize-settings';
+import { DEFAULT_RESIZE_SETTINGS } from '../../../models/resize-settings';
 import { ToolDefinition } from '../../../models/tool';
 import { ImageProcessorService } from '../../../services/image-processor.service';
 import { ZipService } from '../../../services/zip.service';
 import { outputFileNameFor } from '../../../utils/format-mapping';
+import { computeResizeTarget } from '../../../utils/resize-dimensions';
 
 @Component({
   selector: 'app-tool-workspace',
-  imports: [ConvertControls, DownloadBar, ImageCard, OutputOptions, RouterLink, UploadZone],
+  imports: [ConvertControls, DownloadBar, ImageCard, OutputOptions, ResizeControls, RouterLink, UploadZone],
   templateUrl: './tool-workspace.html',
   styleUrl: './tool-workspace.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +35,7 @@ export class ToolWorkspace {
   protected readonly tool = computed(() => this.route.snapshot.data['tool'] as ToolDefinition);
   protected readonly jobs = signal<readonly ImageJob[]>([]);
   protected readonly convertSettings = signal<ConvertSettings>(DEFAULT_CONVERT_SETTINGS);
+  protected readonly resizeSettings = signal<ResizeSettings>(DEFAULT_RESIZE_SETTINGS);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -38,9 +43,13 @@ export class ToolWorkspace {
   );
 
   protected addFiles(files: readonly File[]): void {
-    const nameFor = this.tool().slug === 'convert'
-      ? (file: File) => outputFileNameFor(file.name, this.convertSettings().outputFormat)
-      : (file: File) => this.outputNameFor(file.name);
+    const slug = this.tool().slug;
+    const nameFor =
+      slug === 'convert'
+        ? (file: File) => outputFileNameFor(file.name, this.convertSettings().outputFormat)
+        : slug === 'resize'
+          ? (file: File) => outputFileNameFor(file.name, this.resizeSettings().outputFormat)
+          : (file: File) => this.outputNameFor(file.name);
 
     const queuedJobs = files.map((file) => ({
       id: crypto.randomUUID(),
@@ -58,6 +67,10 @@ export class ToolWorkspace {
     this.convertSettings.set(settings);
   }
 
+  protected onResizeSettingsChange(settings: ResizeSettings): void {
+    this.resizeSettings.set(settings);
+  }
+
   protected async processJobs(): Promise<void> {
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
@@ -69,7 +82,7 @@ export class ToolWorkspace {
         this.updateJobStatus(job.id, 'processing');
 
         try {
-          const settings = this.processingSettings();
+          const settings = await this.resolveProcessingSettings(job.inputFile);
           const blob = await this.processor.processInWorker(job.inputFile, settings);
           this.updateJobResult(job.id, blob);
         } catch (error) {
@@ -79,6 +92,31 @@ export class ToolWorkspace {
     } finally {
       this.isProcessing.set(false);
     }
+  }
+
+  private async resolveProcessingSettings(file: File): Promise<ImageProcessingSettings> {
+    if (this.tool().slug === 'convert') {
+      const cs = this.convertSettings();
+      return {
+        format: cs.outputFormat,
+        quality: cs.qualityByFormat[cs.outputFormat],
+      };
+    }
+    if (this.tool().slug === 'resize') {
+      const rs = this.resizeSettings();
+      const source = await this.processor.loadImage(file);
+      const sourceWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const sourceHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+      const target = computeResizeTarget(sourceWidth, sourceHeight, rs);
+      if (source instanceof ImageBitmap) source.close();
+      return {
+        format: rs.outputFormat,
+        quality: rs.quality,
+        width: target.output.width,
+        height: target.output.height,
+      };
+    }
+    return DEFAULT_SETTINGS;
   }
 
   private processingSettings(): ImageProcessingSettings {
