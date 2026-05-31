@@ -1,0 +1,76 @@
+<header class="app-header">
+  <div class="app-header__inner">
+    <a class="app-logo" routerLink="/" aria-label="OPTICPRESS home">
+      <svg class="app-logo__mark" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="2" y="5" width="24" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+        <circle cx="10" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3 20l5-5 3 3 5-5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="app-logo__text">OPTICPRESS</span>
+    </a>
+    <span class="ws-breadcrumb">
+      <span class="ws-breadcrumb__sep">/</span>
+      <span class="ws-breadcrumb__current">{{ tool().name }}</span>
+    </span>
+  </div>
+</header>
+
+<main class="workspace-shell">
+  <section class="workspace-hero" aria-labelledby="workspace-title">
+    <p class="workspace-hero__eyebrow">code</p>
+    <h1 id="workspace-title" class="workspace-hero__title">{{ tool().name }}</h1>
+    <p class="workspace-hero__subtitle">{{ tool().description }}</p>
+  </section>
+
+  <div class="workspace-grid">
+    <section class="workspace-primary" aria-label="Image input and results">
+      <app-upload-zone (filesSelected)="addFiles($event)" />
+
+      @if (jobs().length > 0) {
+        <div class="job-list" aria-label="Selected images">
+          @for (job of jobs(); track job.id) {
+            <app-image-card [job]="job" />
+          }
+        </div>
+      } @else {
+        <p class="empty-state">Upload images to preview the {{ tool().name }} workflow.</p>
+      }
+    </section>
+
+    <aside class="workspace-panel" aria-label="Workspace controls">
+      <app-output-options>
+        @if (tool().slug === 'convert') {
+          <app-convert-controls
+            [settings]="convertSettings()"
+            (settingsChange)="onConvertSettingsChange($event)"
+          />
+        } @else {
+          <div class="option-placeholder">
+            <label>
+              Quality preset
+              <select>
+                <option>Balanced</option>
+                <option>Smallest file</option>
+                <option>Highest quality</option>
+              </select>
+            </label>
+            <p>Tool-specific settings will be added by each image processing feature.</p>
+          </div>
+        }
+      </app-output-options>
+
+      @if (hasQueuedJobs()) {
+        <button
+          type="button"
+          class="workspace-process-btn"
+          [disabled]="isProcessing()"
+          (click)="processJobs()"
+        >
+          {{ isProcessing() ? 'Processing\u2026' : 'Process images' }}
+        </button>
+      }
+
+      <app-download-bar [jobs]="jobs()" (zipRequested)="requestZip()" />
+    </aside>
+  </div>
+</main>

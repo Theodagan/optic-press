@@ -1,0 +1,37 @@
+<fieldset class="convert-controls__group">
+  <legend class="convert-controls__legend">Output format</legend>
+  <select
+    class="convert-controls__select"
+    [value]="settings().outputFormat"
+    (change)="onFormatChange($any($event.target).value)"
+  >
+    @for (format of formats(); track format) {
+      <option [value]="format">{{ formatLabels[format] }}</option>
+    }
+  </select>
+</fieldset>
+
+<fieldset class="convert-controls__group">
+  <legend class="convert-controls__legend">Quality</legend>
+  <div class="convert-controls__quality-row">
+    <input
+      type="range"
+      class="convert-controls__range"
+      min="1"
+      max="100"
+      [value]="currentQuality()"
+      (input)="onQualityChange($any($event.target).value)"
+    />
+    <output class="convert-controls__quality-value">{{ currentQuality() }}</output>
+  </div>
+</fieldset>
+
+<label class="convert-controls__checkbox-label">
+  <input
+    type="checkbox"
+    class="convert-controls__checkbox"
+    [checked]="settings().tagSrgb"
+    (change)="onSrgbChange($any($event.target).checked)"
+  />
+  Tag sRGB color profile
+</label>

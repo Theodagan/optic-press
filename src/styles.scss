@@ -1,0 +1,73 @@
+:root {
+  --ts-color-bg: #f9f9fa;
+  --ts-color-surface: #ffffff;
+  --ts-color-surface-high: #f3f3f4;
+  --ts-color-surface-elevated: #eeeeef;
+  --ts-color-text: #1a1c1d;
+  --ts-color-text-muted: #504535;
+  --ts-color-accent: #c28b0a;
+  --ts-color-accent-dark: #7d5800;
+  --ts-color-accent-light: #ffdea9;
+  --ts-color-accent-container: #fabc42;
+  --ts-color-blue: #0061a4;
+  --ts-color-blue-light: #5199e2;
+  --ts-color-blue-container: #d1e4ff;
+  --ts-color-green: #166534;
+  --ts-color-green-bg: #dcfce7;
+  --ts-color-red: #ba1a1a;
+  --ts-color-red-bg: #ffdad6;
+  --ts-color-border: rgba(26, 28, 29, 0.12);
+  --ts-color-border-strong: rgba(26, 28, 29, 0.2);
+
+  --ts-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ts-weight-extrabold: 800;
+  --ts-weight-bold: 700;
+  --ts-weight-semibold: 600;
+  --ts-weight-medium: 500;
+
+  --ts-radius-sm: 0.125rem;
+  --ts-radius-default: 0.25rem;
+  --ts-radius-md: 0.5rem;
+  --ts-radius-lg: 0.75rem;
+  --ts-radius-pill: 9999px;
+
+  --ts-space-xs: 0.25rem;
+  --ts-space-sm: 0.75rem;
+  --ts-space-md: 1.5rem;
+  --ts-space-lg: 2.5rem;
+  --ts-space-xl: 4rem;
+
+  --ts-gutter: 1.5rem;
+  --ts-max-width: 80rem;
+
+  --ts-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ts-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --ts-shadow-bar: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--ts-color-bg);
+  color: var(--ts-color-text);
+  font-family: var(--ts-font);
+  font-weight: var(--ts-weight-medium);
+  margin: 0;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}

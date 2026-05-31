@@ -1,0 +1,12 @@
+<aside class="download-bar" aria-label="Download summary">
+  <div class="download-bar__stats">
+    <span class="download-bar__processed">{{ completedJobs().length }} file(s) processed</span>
+    @if (savings() !== 'Pending') {
+      <span class="download-bar__savings">saved {{ outputSize() }} total</span>
+    }
+  </div>
+
+  <button type="button" [disabled]="completedJobs().length === 0" (click)="requestZip()">
+    Download ZIP
+  </button>
+</aside>
