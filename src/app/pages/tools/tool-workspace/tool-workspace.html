@@ -49,6 +49,11 @@
             [settings]="resizeSettings()"
             (settingsChange)="onResizeSettingsChange($event)"
           />
+        } @else if (tool().slug === 'compress') {
+          <app-compress-controls
+            [settings]="compressSettings()"
+            (settingsChange)="onCompressSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>
