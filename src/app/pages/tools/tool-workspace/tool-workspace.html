@@ -54,6 +54,11 @@
             [settings]="compressSettings()"
             (settingsChange)="onCompressSettingsChange($event)"
           />
+        } @else if (tool().slug === 'auto-optimize') {
+          <app-auto-optimize-controls
+            [settings]="autoOptimizeSettings()"
+            (settingsChange)="onAutoOptimizeSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>
