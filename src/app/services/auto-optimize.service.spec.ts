@@ -8,6 +8,38 @@ describe('AutoOptimizeService', () => {
     service = new AutoOptimizeService();
   });
 
+  describe('selectFormat', () => {
+    it('should return format lock when set', () => {
+      expect(service.selectFormat(true, false, 500_000, true, 'png')).toBe('png');
+      expect(service.selectFormat(false, true, 500_000, true, 'jpeg')).toBe('jpeg');
+    });
+
+    it('should prefer AVIF for photo larger than 200KB with AVIF support', () => {
+      expect(service.selectFormat(true, false, 300_000, true, null)).toBe('avif');
+    });
+
+    it('should prefer WebP for photo smaller than or equal to 200KB', () => {
+      expect(service.selectFormat(true, false, 200_000, true, null)).toBe('webp');
+      expect(service.selectFormat(true, false, 100_000, true, null)).toBe('webp');
+    });
+
+    it('should prefer WebP for photo without AVIF support', () => {
+      expect(service.selectFormat(true, false, 500_000, false, null)).toBe('webp');
+    });
+
+    it('should prefer PNG for graphic with alpha', () => {
+      expect(service.selectFormat(false, true, 500_000, true, null)).toBe('png');
+    });
+
+    it('should prefer WebP for graphic without alpha', () => {
+      expect(service.selectFormat(false, false, 500_000, true, null)).toBe('webp');
+    });
+
+    it('should prefer WebP for photo with alpha and AVIF supported above 200KB', () => {
+      expect(service.selectFormat(true, true, 300_000, true, null)).toBe('avif');
+    });
+  });
+
   describe('computeMaxDimensionOverride', () => {
     it('should not resize when both dimensions are within max', () => {
       const result = service.computeMaxDimensionOverride(1000, 800, {
@@ -113,6 +145,40 @@ describe('AutoOptimizeService', () => {
       });
       const result = await service.binarySearchQuality(encodeAtQuality, 1_000_000);
       expect(result.outputBytes).toBe(result.quality * 10);
+    });
+  });
+
+  describe('isAlreadyOptimal', () => {
+    it('should return true when output is larger than input', () => {
+      expect(service.isAlreadyOptimal(1000, 2000)).toBeTrue();
+    });
+
+    it('should return true when output equals input', () => {
+      expect(service.isAlreadyOptimal(1000, 1000)).toBeTrue();
+    });
+
+    it('should return false when output is smaller than input', () => {
+      expect(service.isAlreadyOptimal(1000, 500)).toBeFalse();
+    });
+  });
+
+  describe('finalizeOutput', () => {
+    it('should return original bytes when already optimal', () => {
+      const result = service.finalizeOutput(1000, 1500);
+      expect(result.isAlreadyOptimal).toBeTrue();
+      expect(result.outputBytes).toBe(1000);
+    });
+
+    it('should return optimized bytes when smaller', () => {
+      const result = service.finalizeOutput(1000, 500);
+      expect(result.isAlreadyOptimal).toBeFalse();
+      expect(result.outputBytes).toBe(500);
+    });
+
+    it('should return original bytes when equal', () => {
+      const result = service.finalizeOutput(1000, 1000);
+      expect(result.isAlreadyOptimal).toBeTrue();
+      expect(result.outputBytes).toBe(1000);
     });
   });
 });
