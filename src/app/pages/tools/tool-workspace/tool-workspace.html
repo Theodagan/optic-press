@@ -59,6 +59,11 @@
             [settings]="autoOptimizeSettings()"
             (settingsChange)="onAutoOptimizeSettingsChange($event)"
           />
+        } @else if (tool().slug === 'favicon') {
+          <app-favicon-controls
+            [settings]="faviconSettings()"
+            (settingsChange)="onFaviconSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>

@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AutoOptimizeControls } from '../../../components/auto-optimize-controls/auto-optimize-controls';
 import { CompressControls } from '../../../components/compress-controls/compress-controls';
 import { ConvertControls } from '../../../components/convert-controls/convert-controls';
+import { FaviconControls } from '../../../components/favicon-controls/favicon-controls';
 import { DownloadBar } from '../../../components/download-bar/download-bar';
 import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
@@ -15,6 +16,8 @@ import type { CompressSettings } from '../../../models/compress-settings';
 import { DEFAULT_COMPRESS_SETTINGS } from '../../../models/compress-settings';
 import type { ConvertSettings } from '../../../models/convert-settings';
 import { DEFAULT_CONVERT_SETTINGS } from '../../../models/convert-settings';
+import type { FaviconSettings } from '../../../models/favicon-settings';
+import { DEFAULT_FAVICON_SETTINGS } from '../../../models/favicon-settings';
 import { ImageJob } from '../../../models/image-job';
 import type { ImageProcessingSettings } from '../../../models/processing-settings';
 import { DEFAULT_SETTINGS } from '../../../models/processing-settings';
@@ -22,6 +25,7 @@ import type { ResizeSettings } from '../../../models/resize-settings';
 import { DEFAULT_RESIZE_SETTINGS } from '../../../models/resize-settings';
 import { ToolDefinition } from '../../../models/tool';
 import { AutoOptimizeService } from '../../../services/auto-optimize.service';
+import { FaviconService } from '../../../services/favicon.service';
 import { ImageProcessorService, ImageSource } from '../../../services/image-processor.service';
 import { ZipService } from '../../../services/zip.service';
 import { isAvifSupported } from '../../../utils/avif-detect';
@@ -35,6 +39,7 @@ import { computeResizeTarget } from '../../../utils/resize-dimensions';
     AutoOptimizeControls,
     CompressControls,
     ConvertControls,
+    FaviconControls,
     DownloadBar,
     ImageCard,
     OutputOptions,
@@ -51,6 +56,7 @@ export class ToolWorkspace {
   private readonly processor = inject(ImageProcessorService);
   private readonly zipService = inject(ZipService);
   private readonly autoOptimize = inject(AutoOptimizeService);
+  private readonly faviconService = inject(FaviconService);
 
   protected readonly tool = computed(() => this.route.snapshot.data['tool'] as ToolDefinition);
   protected readonly jobs = signal<readonly ImageJob[]>([]);
@@ -58,6 +64,7 @@ export class ToolWorkspace {
   protected readonly resizeSettings = signal<ResizeSettings>(DEFAULT_RESIZE_SETTINGS);
   protected readonly compressSettings = signal<CompressSettings>(DEFAULT_COMPRESS_SETTINGS);
   protected readonly autoOptimizeSettings = signal<AutoOptimizeSettings>(DEFAULT_AUTO_OPTIMIZE_SETTINGS);
+  protected readonly faviconSettings = signal<FaviconSettings>(DEFAULT_FAVICON_SETTINGS);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -73,14 +80,20 @@ export class ToolWorkspace {
           ? (file: File) => outputFileNameFor(file.name, this.resizeSettings().outputFormat)
           : slug === 'compress'
             ? (file: File) => outputFileNameFor(file.name, this.compressSettings().format)
-            : slug === 'auto-optimize'
-              ? (file: File) => {
-                  const dotIndex = file.name.lastIndexOf('.');
-                  const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
-                  const extension = dotIndex > 0 ? file.name.slice(dotIndex) : '';
-                  return `${baseName}-optimized${extension}`;
-                }
-              : (file: File) => this.outputNameFor(file.name);
+              : slug === 'auto-optimize'
+                ? (file: File) => {
+                    const dotIndex = file.name.lastIndexOf('.');
+                    const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+                    const extension = dotIndex > 0 ? file.name.slice(dotIndex) : '';
+                    return `${baseName}-optimized${extension}`;
+                  }
+                : slug === 'favicon'
+                  ? (file: File) => {
+                      const dotIndex = file.name.lastIndexOf('.');
+                      const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+                      return `${baseName}-favicon.zip`;
+                    }
+                  : (file: File) => this.outputNameFor(file.name);
 
     const queuedJobs = files.map((file) => ({
       id: crypto.randomUUID(),
@@ -110,6 +123,10 @@ export class ToolWorkspace {
     this.autoOptimizeSettings.set(settings);
   }
 
+  protected onFaviconSettingsChange(settings: FaviconSettings): void {
+    this.faviconSettings.set(settings);
+  }
+
   protected async processJobs(): Promise<void> {
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
@@ -121,7 +138,9 @@ export class ToolWorkspace {
         this.updateJobStatus(job.id, 'processing');
 
         try {
-          if (this.tool().slug === 'auto-optimize') {
+          if (this.tool().slug === 'favicon') {
+            await this.processFaviconJob(job);
+          } else if (this.tool().slug === 'auto-optimize') {
             await this.processAutoOptimizeJob(job);
           } else {
             const settings = await this.resolveProcessingSettings(job.inputFile);
@@ -206,6 +225,28 @@ export class ToolWorkspace {
     );
   }
 
+  private async processFaviconJob(job: ImageJob): Promise<void> {
+    const fileMap = await this.faviconService.generatePackage(
+      job.inputFile,
+      this.faviconSettings(),
+    );
+
+    const zipBlob = await this.zipService.buildZipFromFiles(fileMap);
+
+    this.jobs.update((currentJobs) =>
+      currentJobs.map((j) =>
+        j.id === job.id
+          ? {
+              ...j,
+              status: 'done' as const,
+              outputBlob: zipBlob,
+              outputBytes: zipBlob.size,
+            }
+          : j,
+      ),
+    );
+  }
+
   private async hasImageAlpha(source: ImageSource): Promise<boolean> {
     const canvas = await this.processor.drawToCanvas(source, { width: 1, height: 1 });
     const ctx = (canvas instanceof OffscreenCanvas
@@ -276,6 +317,16 @@ export class ToolWorkspace {
   }
 
   protected async requestZip(): Promise<void> {
+    if (this.tool().slug === 'favicon') {
+      const completed = this.jobs().filter(
+        (job): job is ImageJob & { outputBlob: Blob; outputName: string } =>
+          job.status === 'done' && !!job.outputBlob && !!job.outputName,
+      );
+      if (completed.length === 0) return;
+      this.downloadBlob(completed[0].outputBlob, completed[0].outputName);
+      return;
+    }
+
     const completed = this.jobs().filter(
       (job): job is ImageJob & { outputBlob: Blob; outputName: string } =>
         job.status === 'done' && !!job.outputBlob && !!job.outputName,

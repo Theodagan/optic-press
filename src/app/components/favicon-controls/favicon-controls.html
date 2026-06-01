@@ -1,0 +1,34 @@
+<fieldset class="favicon-controls__group">
+  <legend class="favicon-controls__legend">Background color</legend>
+  <div class="favicon-controls__color-row">
+    <input
+      type="color"
+      class="favicon-controls__color"
+      [value]="settings().backgroundColor"
+      (input)="onBackgroundChange($any($event.target).value)"
+    />
+    <output class="favicon-controls__color-value">{{ settings().backgroundColor }}</output>
+  </div>
+</fieldset>
+
+<fieldset class="favicon-controls__group">
+  <legend class="favicon-controls__legend">App name</legend>
+  <input
+    type="text"
+    class="favicon-controls__input"
+    [value]="settings().appName"
+    (input)="onAppNameChange($any($event.target).value)"
+    placeholder="My App"
+  />
+</fieldset>
+
+<fieldset class="favicon-controls__group">
+  <legend class="favicon-controls__legend">Short name</legend>
+  <input
+    type="text"
+    class="favicon-controls__input"
+    [value]="settings().appShortName"
+    (input)="onAppShortNameChange($any($event.target).value)"
+    placeholder="App"
+  />
+</fieldset>
