@@ -29,5 +29,13 @@
     @if (job().error) {
       <p class="image-card__error">{{ job().error }}</p>
     }
+
+    @if (hasWarnings()) {
+      <ul class="image-card__warnings">
+        @for (warning of warningsList(); track $index) {
+          <li>{{ warning }}</li>
+        }
+      </ul>
+    }
   </div>
 </article>

@@ -1,0 +1,60 @@
+<fieldset class="strip-metadata-controls__group">
+  <legend class="strip-metadata-controls__legend">Metadata removal</legend>
+  <p class="strip-metadata-controls__info">
+    EXIF data is always stripped via canvas redraw.
+  </p>
+</fieldset>
+
+<fieldset class="strip-metadata-controls__group">
+  <legend class="strip-metadata-controls__legend">Color profile</legend>
+
+  <label class="strip-metadata-controls__checkbox-label">
+    <input
+      type="checkbox"
+      class="strip-metadata-controls__checkbox"
+      [checked]="settings().stripIccProfile"
+      (change)="onIccChange($any($event.target).checked)"
+    />
+    Strip ICC color profile
+  </label>
+
+  <label class="strip-metadata-controls__checkbox-label">
+    <input
+      type="checkbox"
+      class="strip-metadata-controls__checkbox"
+      [checked]="settings().retagSrgb"
+      (change)="onSrgbChange($any($event.target).checked)"
+    />
+    Re-tag as sRGB
+  </label>
+</fieldset>
+
+<fieldset class="strip-metadata-controls__group">
+  <legend class="strip-metadata-controls__legend">Output format</legend>
+  <select
+    class="strip-metadata-controls__select"
+    [value]="settings().outputFormat"
+    (change)="onFormatChange($any($event.target).value)"
+  >
+    @for (format of formatOrder; track format) {
+      <option [value]="format">{{ formatLabels[format] }}</option>
+    }
+  </select>
+</fieldset>
+
+@if (settings().outputFormat !== 'same') {
+  <fieldset class="strip-metadata-controls__group">
+    <legend class="strip-metadata-controls__legend">Quality</legend>
+    <div class="strip-metadata-controls__quality-row">
+      <input
+        type="range"
+        class="strip-metadata-controls__range"
+        min="1"
+        max="100"
+        [value]="settings().quality"
+        (input)="onQualityChange($any($event.target).value)"
+      />
+      <output class="strip-metadata-controls__quality-value">{{ settings().quality }}</output>
+    </div>
+  </fieldset>
+}

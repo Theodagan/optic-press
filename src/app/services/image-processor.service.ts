@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import type { ImageProcessingSettings } from '../models/processing-settings';
 import type { Dimensions } from '../models/dimensions';
+import type { StripMetadataSettings } from '../models/strip-metadata-settings';
+import type { ProcessingOutput } from '../models/processing-output';
+import type { ImageFormat } from '../models/processing-settings';
 
 export type ImageSource = ImageBitmap | HTMLImageElement;
 export type CanvasLike = HTMLCanvasElement | OffscreenCanvas;
@@ -74,7 +77,11 @@ export class ImageProcessorService {
     return result;
   }
 
-  private canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
+  private canvasToBlob(
+    canvas: HTMLCanvasElement,
+    mimeType: string,
+    quality?: number,
+  ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -85,21 +92,9 @@ export class ImageProcessorService {
           }
         },
         mimeType,
+        quality,
       );
     });
-  }
-
-  private mimeTypeFor(format: ImageProcessingSettings['format']): string {
-    switch (format) {
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'avif':
-        return 'image/avif';
-    }
   }
 
   get isWorkerSupported(): boolean {
@@ -166,6 +161,86 @@ export class ImageProcessorService {
     }
 
     return blob;
+  }
+
+  async processStripMetadata(
+    file: File,
+    settings: StripMetadataSettings,
+  ): Promise<ProcessingOutput> {
+    const source = await this.loadImage(file);
+    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+
+    const canvas = await this.drawToCanvas(source, {
+      width: inputWidth,
+      height: inputHeight,
+    });
+
+    if (source instanceof ImageBitmap) {
+      source.close();
+    }
+
+    const inputMime = file.type || this.inferMimeFromName(file.name);
+    const outputFormat = settings.outputFormat === 'same'
+      ? this.formatFromMime(inputMime)
+      : settings.outputFormat;
+    const outputMime = this.mimeTypeFor(outputFormat);
+
+    const blob = canvas instanceof OffscreenCanvas
+      ? await canvas.convertToBlob({ type: outputMime, quality: settings.quality / 100 })
+      : await this.canvasToBlob(canvas as HTMLCanvasElement, outputMime, settings.quality / 100);
+
+    const ext = outputFormat === 'jpeg' ? '.jpg' : `.${outputFormat}`;
+    const dotIndex = file.name.lastIndexOf('.');
+    const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+    const filename = settings.outputFormat === 'same'
+      ? `${baseName}-stripped${dotIndex > 0 ? file.name.slice(dotIndex) : ''}`
+      : `${baseName}-stripped${ext}`;
+
+    return {
+      blob,
+      filename,
+      mimeType: outputMime,
+      bytes: blob.size,
+      width: inputWidth,
+      height: inputHeight,
+    };
+  }
+
+  private inferMimeFromName(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+    const extMap: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      avif: 'image/avif',
+      svg: 'image/svg+xml',
+      gif: 'image/gif',
+      bmp: 'image/bmp',
+    };
+    return extMap[ext] ?? 'image/png';
+  }
+
+  private formatFromMime(mime: string): ImageFormat {
+    if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpeg';
+    if (mime.includes('png')) return 'png';
+    if (mime.includes('webp')) return 'webp';
+    if (mime.includes('avif')) return 'avif';
+    return 'png';
+  }
+
+  private mimeTypeFor(format: ImageProcessingSettings['format']): string {
+    switch (format) {
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'avif':
+        return 'image/avif';
+    }
   }
 
   private async loadImageFallback(file: File): Promise<HTMLImageElement> {
