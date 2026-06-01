@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import type { Dimensions } from '../models/dimensions';
 import type { AutoOptimizeSettings } from '../models/auto-optimize';
+import type { ImageFormat } from '../models/processing-settings';
 import { QUALITY_MIN, QUALITY_MAX } from '../models/auto-optimize';
 
 export interface ResizeResult {
@@ -14,8 +15,41 @@ export interface QualitySearchResult {
   readonly outputBytes: number;
 }
 
+export interface AutoOptimizeOutput {
+  readonly isAlreadyOptimal: boolean;
+  readonly outputBytes: number;
+}
+
+const AVIF_SIZE_THRESHOLD = 200_000;
+
 @Injectable({ providedIn: 'root' })
 export class AutoOptimizeService {
+  selectFormat(
+    isPhoto: boolean,
+    hasAlpha: boolean,
+    originalSize: number,
+    isAvifSupported: boolean,
+    formatLock: ImageFormat | null,
+  ): ImageFormat {
+    if (formatLock !== null) {
+      return formatLock;
+    }
+
+    if (isPhoto && isAvifSupported && originalSize > AVIF_SIZE_THRESHOLD) {
+      return 'avif';
+    }
+
+    if (isPhoto) {
+      return 'webp';
+    }
+
+    if (hasAlpha) {
+      return 'png';
+    }
+
+    return 'webp';
+  }
+
   computeMaxDimensionOverride(
     sourceWidth: number,
     sourceHeight: number,
@@ -69,5 +103,16 @@ export class AutoOptimizeService {
     }
 
     return { quality: bestQuality, outputBytes: bestSize };
+  }
+
+  isAlreadyOptimal(inputBytes: number, outputBytes: number): boolean {
+    return outputBytes >= inputBytes;
+  }
+
+  finalizeOutput(inputBytes: number, outputBytes: number): AutoOptimizeOutput {
+    if (outputBytes >= inputBytes) {
+      return { isAlreadyOptimal: true, outputBytes: inputBytes };
+    }
+    return { isAlreadyOptimal: false, outputBytes };
   }
 }
