@@ -31,6 +31,17 @@ export class ImageCard {
     return `${percent}%`;
   });
 
+  protected downloadFile(): void {
+    const { outputBlob, outputName } = this.job();
+    if (!outputBlob) return;
+    const url = URL.createObjectURL(outputBlob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = outputName ?? 'output';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   private formatBytes(bytes?: number): string {
     if (bytes === undefined) {
       return 'Pending';

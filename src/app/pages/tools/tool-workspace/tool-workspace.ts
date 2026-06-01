@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { CompressControls } from '../../../components/compress-controls/compress-controls';
 import { ConvertControls } from '../../../components/convert-controls/convert-controls';
 import { DownloadBar } from '../../../components/download-bar/download-bar';
 import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
 import { ResizeControls } from '../../../components/resize-controls/resize-controls';
 import { UploadZone } from '../../../components/upload-zone/upload-zone';
+import type { CompressSettings } from '../../../models/compress-settings';
+import { DEFAULT_COMPRESS_SETTINGS } from '../../../models/compress-settings';
 import type { ConvertSettings } from '../../../models/convert-settings';
 import { DEFAULT_CONVERT_SETTINGS } from '../../../models/convert-settings';
 import { ImageJob } from '../../../models/image-job';
@@ -22,7 +25,7 @@ import { computeResizeTarget } from '../../../utils/resize-dimensions';
 
 @Component({
   selector: 'app-tool-workspace',
-  imports: [ConvertControls, DownloadBar, ImageCard, OutputOptions, ResizeControls, RouterLink, UploadZone],
+  imports: [CompressControls, ConvertControls, DownloadBar, ImageCard, OutputOptions, ResizeControls, RouterLink, UploadZone],
   templateUrl: './tool-workspace.html',
   styleUrl: './tool-workspace.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +39,7 @@ export class ToolWorkspace {
   protected readonly jobs = signal<readonly ImageJob[]>([]);
   protected readonly convertSettings = signal<ConvertSettings>(DEFAULT_CONVERT_SETTINGS);
   protected readonly resizeSettings = signal<ResizeSettings>(DEFAULT_RESIZE_SETTINGS);
+  protected readonly compressSettings = signal<CompressSettings>(DEFAULT_COMPRESS_SETTINGS);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -49,7 +53,9 @@ export class ToolWorkspace {
         ? (file: File) => outputFileNameFor(file.name, this.convertSettings().outputFormat)
         : slug === 'resize'
           ? (file: File) => outputFileNameFor(file.name, this.resizeSettings().outputFormat)
-          : (file: File) => this.outputNameFor(file.name);
+          : slug === 'compress'
+            ? (file: File) => outputFileNameFor(file.name, this.compressSettings().format)
+            : (file: File) => this.outputNameFor(file.name);
 
     const queuedJobs = files.map((file) => ({
       id: crypto.randomUUID(),
@@ -69,6 +75,10 @@ export class ToolWorkspace {
 
   protected onResizeSettingsChange(settings: ResizeSettings): void {
     this.resizeSettings.set(settings);
+  }
+
+  protected onCompressSettingsChange(settings: CompressSettings): void {
+    this.compressSettings.set(settings);
   }
 
   protected async processJobs(): Promise<void> {
@@ -114,6 +124,13 @@ export class ToolWorkspace {
         quality: rs.quality,
         width: target.output.width,
         height: target.output.height,
+      };
+    }
+    if (this.tool().slug === 'compress') {
+      const cs = this.compressSettings();
+      return {
+        format: cs.format,
+        quality: cs.quality,
       };
     }
     return DEFAULT_SETTINGS;

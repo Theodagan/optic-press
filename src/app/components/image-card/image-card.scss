@@ -108,3 +108,20 @@ h3 {
   font-weight: var(--ts-weight-semibold);
   margin-top: var(--ts-space-xs);
 }
+
+.image-card__download {
+  background: var(--ts-color-accent);
+  border: 0;
+  border-radius: var(--ts-radius-default);
+  color: white;
+  cursor: pointer;
+  font-family: var(--ts-font);
+  font-size: 0.75rem;
+  font-weight: var(--ts-weight-semibold);
+  margin-top: var(--ts-space-xs);
+  padding: 0.3rem 0.75rem;
+}
+
+.image-card__download:hover {
+  opacity: 0.9;
+}

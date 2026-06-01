@@ -19,6 +19,7 @@
         <span>{{ inputSize() }} <span class="image-card__arrow">&rarr;</span> {{ outputSize() }}</span>
         <span class="image-card__savings">-{{ savings() === 'Pending' ? '--' : savings() }}</span>
       </div>
+      <button type="button" class="image-card__download" (click)="downloadFile()">Download</button>
     }
 
     @if (job().outputName) {
