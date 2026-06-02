@@ -2,9 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   HostListener,
+  inject,
   input,
   output,
   signal,
@@ -50,6 +52,7 @@ export class CropControls {
   private dragHandle: DragHandle | null = null;
   private dragStartRect: CropRect | null = null;
   private dragStartPointer: { x: number; y: number } | null = null;
+  private currentPreviewUrl: string | null = null;
 
   private readonly presetOrder: readonly CropPreset[] = [
     'free', '1:1', '16:9', '4:3', '3:2', '1.91:1', 'custom',
@@ -81,6 +84,7 @@ export class CropControls {
 
     effect(() => {
       const image = this.previewImage();
+      this.revokePreviewUrl();
       if (image) {
         this.loadPreviewImage(image);
       } else {
@@ -98,6 +102,10 @@ export class CropControls {
       if (canvas && img && loaded) {
         this.drawCanvas(canvas, img, s);
       }
+    });
+
+    inject(DestroyRef).onDestroy(() => {
+      this.revokePreviewUrl();
     });
   }
 
@@ -434,16 +442,26 @@ export class CropControls {
 
   private loadPreviewImage(file: File): void {
     const url = URL.createObjectURL(file);
+    this.currentPreviewUrl = url;
     const img = new Image();
     img.onload = () => {
       this.loadedImage.set(img);
       this.imageLoaded.set(true);
+      URL.revokeObjectURL(url);
     };
     img.onerror = () => {
       this.loadedImage.set(null);
       this.imageLoaded.set(false);
+      URL.revokeObjectURL(url);
     };
     img.src = url;
+  }
+
+  private revokePreviewUrl(): void {
+    if (this.currentPreviewUrl) {
+      URL.revokeObjectURL(this.currentPreviewUrl);
+      this.currentPreviewUrl = null;
+    }
   }
 
   private drawCanvas(
