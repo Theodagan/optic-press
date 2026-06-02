@@ -1,0 +1,88 @@
+<section class="crop-controls__section">
+  <label class="crop-controls__label">Aspect ratio</label>
+  <select
+    class="crop-controls__select"
+    [value]="settings().preset"
+    (change)="onPresetChange($any($event.target).value)"
+  >
+    @for (preset of presets(); track preset.value) {
+      <option [value]="preset.value">{{ preset.label }}</option>
+    }
+  </select>
+</section>
+
+@if (settings().preset === 'custom') {
+  <section class="crop-controls__section">
+    <label class="crop-controls__label">Custom ratio</label>
+    <div class="crop-controls__ratio-row">
+      <input
+        type="number"
+        class="crop-controls__number-input"
+        min="1"
+        placeholder="W"
+        [value]="settings().customRatioW"
+        (input)="onCustomRatioWChange($any($event.target).value)"
+      />
+      <span class="crop-controls__ratio-sep">:</span>
+      <input
+        type="number"
+        class="crop-controls__number-input"
+        min="1"
+        placeholder="H"
+        [value]="settings().customRatioH"
+        (input)="onCustomRatioHChange($any($event.target).value)"
+      />
+    </div>
+    @for (warning of validationWarnings(); track warning.field) {
+      <small class="crop-controls__warning">{{ warning.message }}</small>
+    }
+  </section>
+}
+
+@if (previewImage(); as file) {
+  <section class="crop-controls__section">
+    <label class="crop-controls__label">Crop preview</label>
+    <canvas
+      #cropCanvas
+      class="crop-controls__canvas"
+      width="400"
+      height="300"
+      (pointerdown)="onCanvasPointerDown($event)"
+    ></canvas>
+  </section>
+} @else {
+  <p class="crop-controls__hint">Upload an image to preview the crop overlay.</p>
+}
+
+<section class="crop-controls__section">
+  <label class="crop-controls__label">Output format</label>
+  <select
+    class="crop-controls__select"
+    [value]="settings().outputFormat"
+    (change)="onFormatChange($any($event.target).value)"
+  >
+    @for (format of formats(); track format) {
+      <option [value]="format">{{ formatLabels[format] }}</option>
+    }
+  </select>
+</section>
+
+<section class="crop-controls__section">
+  <label class="crop-controls__label">Quality</label>
+  <div class="crop-controls__quality-row">
+    <input
+      type="range"
+      class="crop-controls__range"
+      min="1"
+      max="100"
+      [value]="settings().quality"
+      (input)="onQualityChange($any($event.target).value)"
+    />
+    <output class="crop-controls__quality-value">{{ settings().quality }}</output>
+  </div>
+  @for (warning of validationWarnings(); track warning.field) {
+    @if (warning.field === 'quality') {
+      <small class="crop-controls__warning">{{ warning.message }}</small>
+    }
+  }
+</section>

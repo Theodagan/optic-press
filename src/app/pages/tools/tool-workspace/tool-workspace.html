@@ -69,6 +69,12 @@
             [settings]="stripMetadataSettings()"
             (settingsChange)="onStripMetadataSettingsChange($event)"
           />
+        } @else if (tool().slug === 'crop') {
+          <app-crop-controls
+            [settings]="cropSettings()"
+            [previewImage]="cropPreviewFile()"
+            (settingsChange)="onCropSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>
