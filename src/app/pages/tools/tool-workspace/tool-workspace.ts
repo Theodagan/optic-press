@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AutoOptimizeControls } from '../../../components/auto-optimize-controls/auto-optimize-controls';
 import { CompressControls } from '../../../components/compress-controls/compress-controls';
 import { ConvertControls } from '../../../components/convert-controls/convert-controls';
+import { CropControls } from '../../../components/crop-controls/crop-controls';
 import { FaviconControls } from '../../../components/favicon-controls/favicon-controls';
 import { StripMetadataControls } from '../../../components/strip-metadata-controls/strip-metadata-controls';
 import { DownloadBar } from '../../../components/download-bar/download-bar';
@@ -17,6 +18,8 @@ import type { CompressSettings } from '../../../models/compress-settings';
 import { DEFAULT_COMPRESS_SETTINGS } from '../../../models/compress-settings';
 import type { ConvertSettings } from '../../../models/convert-settings';
 import { DEFAULT_CONVERT_SETTINGS } from '../../../models/convert-settings';
+import type { CropSettings } from '../../../models/crop-settings';
+import { DEFAULT_CROP_SETTINGS } from '../../../models/crop-settings';
 import type { FaviconSettings } from '../../../models/favicon-settings';
 import { DEFAULT_FAVICON_SETTINGS } from '../../../models/favicon-settings';
 import { ImageJob } from '../../../models/image-job';
@@ -43,6 +46,7 @@ import { computeResizeTarget } from '../../../utils/resize-dimensions';
     AutoOptimizeControls,
     CompressControls,
     ConvertControls,
+    CropControls,
     FaviconControls,
     StripMetadataControls,
     DownloadBar,
@@ -71,6 +75,7 @@ export class ToolWorkspace {
   protected readonly autoOptimizeSettings = signal<AutoOptimizeSettings>(DEFAULT_AUTO_OPTIMIZE_SETTINGS);
   protected readonly faviconSettings = signal<FaviconSettings>(DEFAULT_FAVICON_SETTINGS);
   protected readonly stripMetadataSettings = signal<StripMetadataSettings>(DEFAULT_STRIP_METADATA_SETTINGS);
+  protected readonly cropSettings = signal<CropSettings>(DEFAULT_CROP_SETTINGS);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -86,6 +91,8 @@ export class ToolWorkspace {
           ? (file: File) => outputFileNameFor(file.name, this.resizeSettings().outputFormat)
           : slug === 'compress'
             ? (file: File) => outputFileNameFor(file.name, this.compressSettings().format)
+            : slug === 'crop'
+              ? (file: File) => outputFileNameFor(file.name, this.cropSettings().outputFormat)
               : slug === 'auto-optimize'
                 ? (file: File) => {
                     const dotIndex = file.name.lastIndexOf('.');
@@ -137,6 +144,17 @@ export class ToolWorkspace {
     this.stripMetadataSettings.set(settings);
   }
 
+  protected onCropSettingsChange(settings: CropSettings): void {
+    this.cropSettings.set(settings);
+  }
+
+  protected readonly cropPreviewFile = computed(() => {
+    if (this.tool().slug !== 'crop') return null;
+    const jobList = this.jobs();
+    if (jobList.length === 0) return null;
+    return jobList[0].inputFile;
+  });
+
   protected async processJobs(): Promise<void> {
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
@@ -154,6 +172,8 @@ export class ToolWorkspace {
             await this.processAutoOptimizeJob(job);
           } else if (this.tool().slug === 'strip-metadata') {
             await this.processStripMetadataJob(job);
+          } else if (this.tool().slug === 'crop') {
+            await this.processCropJob(job);
           } else {
             const settings = await this.resolveProcessingSettings(job.inputFile);
             const blob = await this.processor.processInWorker(job.inputFile, settings);
@@ -290,6 +310,27 @@ export class ToolWorkspace {
               width: output.width,
               height: output.height,
               warnings,
+            }
+          : j,
+      ),
+    );
+  }
+
+  private async processCropJob(job: ImageJob): Promise<void> {
+    const blob = await this.processor.processCrop(job.inputFile, this.cropSettings());
+    const cs = this.cropSettings();
+
+    this.jobs.update((currentJobs) =>
+      currentJobs.map((j) =>
+        j.id === job.id
+          ? {
+              ...j,
+              status: 'done' as const,
+              outputBlob: blob,
+              outputBytes: blob.size,
+              outputName: outputFileNameFor(job.inputFile.name, cs.outputFormat),
+              width: cs.rect.width > 0 ? cs.rect.width : undefined,
+              height: cs.rect.height > 0 ? cs.rect.height : undefined,
             }
           : j,
       ),

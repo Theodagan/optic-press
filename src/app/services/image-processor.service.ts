@@ -4,6 +4,7 @@ import type { Dimensions } from '../models/dimensions';
 import type { StripMetadataSettings } from '../models/strip-metadata-settings';
 import type { ProcessingOutput } from '../models/processing-output';
 import type { ImageFormat } from '../models/processing-settings';
+import type { CropRect, CropSettings } from '../models/crop-settings';
 
 export type ImageSource = ImageBitmap | HTMLImageElement;
 export type CanvasLike = HTMLCanvasElement | OffscreenCanvas;
@@ -161,6 +162,63 @@ export class ImageProcessorService {
     }
 
     return blob;
+  }
+
+  async processCrop(file: File, cropSettings: CropSettings): Promise<Blob> {
+    const source = await this.loadImage(file);
+    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+
+    const rect = this.validateCropRect(cropSettings.rect, inputWidth, inputHeight);
+
+    const canvas = typeof OffscreenCanvas !== 'undefined'
+      ? new OffscreenCanvas(rect.width, rect.height)
+      : document.createElement('canvas');
+
+    if (canvas instanceof HTMLCanvasElement) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+    if (!ctx) {
+      throw new Error('Failed to get 2d context from canvas');
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      source,
+      rect.x, rect.y, rect.width, rect.height,
+      0, 0, rect.width, rect.height,
+    );
+
+    if (source instanceof ImageBitmap) {
+      source.close();
+    }
+
+    const encodeSettings: ImageProcessingSettings = {
+      format: cropSettings.outputFormat,
+      quality: cropSettings.quality,
+      width: rect.width,
+      height: rect.height,
+    };
+
+    return this.encode(canvas, encodeSettings);
+  }
+
+  private validateCropRect(rect: CropRect, imgWidth: number, imgHeight: number): CropRect {
+    if (rect.width <= 0 || rect.height <= 0) {
+      return { x: 0, y: 0, width: imgWidth, height: imgHeight };
+    }
+
+    let { x, y, width, height } = rect;
+    x = Math.max(0, Math.min(x, imgWidth - 1));
+    y = Math.max(0, Math.min(y, imgHeight - 1));
+    width = Math.min(width, imgWidth - x);
+    height = Math.min(height, imgHeight - y);
+
+    return { x, y, width, height };
   }
 
   async processStripMetadata(
