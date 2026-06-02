@@ -46,7 +46,7 @@ describe('ZipService', () => {
       expect(zipBlob.size).toBeGreaterThan(0);
     });
 
-    it('should produce distinct ZIPs for distinct inputs', async () => {
+    it('should include distinct filenames for distinct inputs', async () => {
       const zip1 = await service.buildZip([{
         blob: new Blob(['a'], { type: 'image/png' }),
         filename: 'a.png',
@@ -65,7 +65,17 @@ describe('ZipService', () => {
         height: 10,
       }]);
 
-      expect(zip1.size).not.toBe(zip2.size);
+      const JSZip = await import('jszip');
+      const z1 = await JSZip.default.loadAsync(zip1);
+      const z2 = await JSZip.default.loadAsync(zip2);
+
+      const files1: string[] = [];
+      const files2: string[] = [];
+      z1.forEach((_path: string) => files1.push(_path));
+      z2.forEach((_path: string) => files2.push(_path));
+
+      expect(files1).toEqual(['a.png']);
+      expect(files2).toEqual(['b.png']);
     });
   });
 

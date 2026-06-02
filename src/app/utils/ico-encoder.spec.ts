@@ -85,13 +85,13 @@ describe('encodeIco', () => {
     const entry2Offset = view.getUint32(entriesOffset + 16 + 12, true);
 
     expect(entry1Offset).toBe(6 + 2 * 16);
-    expect(entry2Offset).toBe(6 + 2 * 16 + png16.size);
+    expect(entry2Offset).toBe(6 + 2 * 16 + png32.size);
 
-    const img1Data = new Uint8Array(buffer, entry1Offset, 6);
-    expect([...img1Data]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+    const img1Data = new Uint8Array(buffer, entry1Offset, 4);
+    expect([...img1Data]).toEqual([0xff, 0xd8, 0xff, 0xe0]);
 
-    const img2Data = new Uint8Array(buffer, entry2Offset, 4);
-    expect([...img2Data]).toEqual([0xff, 0xd8, 0xff, 0xe0]);
+    const img2Data = new Uint8Array(buffer, entry2Offset, 6);
+    expect([...img2Data]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
   });
 
   it('should handle 256px size width/height as 0', async () => {

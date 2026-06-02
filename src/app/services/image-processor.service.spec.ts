@@ -22,8 +22,17 @@ describe('ImageProcessorService', () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
-    const blob = new Blob([''], { type: 'image/png' });
-    const file = new File([blob], 'test.png', { type: 'image/png' });
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      pending('Canvas 2d context not available');
+      return;
+    }
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(0, 0, 1, 1);
+    const validPng = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject()), 'image/png');
+    });
+    const file = new File([validPng], 'test.png', { type: 'image/png' });
 
     const result = await service.processMainThread(file, DEFAULT_SETTINGS);
     expect(result).toBeInstanceOf(Blob);
