@@ -109,6 +109,18 @@ h3 {
   margin-top: var(--ts-space-xs);
 }
 
+.image-card__warnings {
+  color: var(--ts-color-text-muted);
+  font-size: 0.7rem;
+  list-style: disc;
+  margin: var(--ts-space-xs) 0 0;
+  padding-inline-start: 1rem;
+}
+
+.image-card__warnings li {
+  margin-bottom: 0.125rem;
+}
+
 .image-card__download {
   background: var(--ts-color-accent);
   border: 0;

@@ -5,6 +5,7 @@ import { AutoOptimizeControls } from '../../../components/auto-optimize-controls
 import { CompressControls } from '../../../components/compress-controls/compress-controls';
 import { ConvertControls } from '../../../components/convert-controls/convert-controls';
 import { FaviconControls } from '../../../components/favicon-controls/favicon-controls';
+import { StripMetadataControls } from '../../../components/strip-metadata-controls/strip-metadata-controls';
 import { DownloadBar } from '../../../components/download-bar/download-bar';
 import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
@@ -24,6 +25,8 @@ import { DEFAULT_SETTINGS } from '../../../models/processing-settings';
 import type { ResizeSettings } from '../../../models/resize-settings';
 import { DEFAULT_RESIZE_SETTINGS } from '../../../models/resize-settings';
 import { ToolDefinition } from '../../../models/tool';
+import type { StripMetadataSettings } from '../../../models/strip-metadata-settings';
+import { DEFAULT_STRIP_METADATA_SETTINGS } from '../../../models/strip-metadata-settings';
 import { AutoOptimizeService } from '../../../services/auto-optimize.service';
 import { FaviconService } from '../../../services/favicon.service';
 import { ImageProcessorService, ImageSource } from '../../../services/image-processor.service';
@@ -31,6 +34,7 @@ import { ZipService } from '../../../services/zip.service';
 import { isAvifSupported } from '../../../utils/avif-detect';
 import { analyzeContent } from '../../../utils/content-detect';
 import { outputFileNameFor } from '../../../utils/format-mapping';
+import { analyzeMetadata } from '../../../utils/metadata-summary';
 import { computeResizeTarget } from '../../../utils/resize-dimensions';
 
 @Component({
@@ -40,6 +44,7 @@ import { computeResizeTarget } from '../../../utils/resize-dimensions';
     CompressControls,
     ConvertControls,
     FaviconControls,
+    StripMetadataControls,
     DownloadBar,
     ImageCard,
     OutputOptions,
@@ -65,6 +70,7 @@ export class ToolWorkspace {
   protected readonly compressSettings = signal<CompressSettings>(DEFAULT_COMPRESS_SETTINGS);
   protected readonly autoOptimizeSettings = signal<AutoOptimizeSettings>(DEFAULT_AUTO_OPTIMIZE_SETTINGS);
   protected readonly faviconSettings = signal<FaviconSettings>(DEFAULT_FAVICON_SETTINGS);
+  protected readonly stripMetadataSettings = signal<StripMetadataSettings>(DEFAULT_STRIP_METADATA_SETTINGS);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -127,6 +133,10 @@ export class ToolWorkspace {
     this.faviconSettings.set(settings);
   }
 
+  protected onStripMetadataSettingsChange(settings: StripMetadataSettings): void {
+    this.stripMetadataSettings.set(settings);
+  }
+
   protected async processJobs(): Promise<void> {
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
@@ -142,6 +152,8 @@ export class ToolWorkspace {
             await this.processFaviconJob(job);
           } else if (this.tool().slug === 'auto-optimize') {
             await this.processAutoOptimizeJob(job);
+          } else if (this.tool().slug === 'strip-metadata') {
+            await this.processStripMetadataJob(job);
           } else {
             const settings = await this.resolveProcessingSettings(job.inputFile);
             const blob = await this.processor.processInWorker(job.inputFile, settings);
@@ -241,6 +253,43 @@ export class ToolWorkspace {
               status: 'done' as const,
               outputBlob: zipBlob,
               outputBytes: zipBlob.size,
+            }
+          : j,
+      ),
+    );
+  }
+
+  private async processStripMetadataJob(job: ImageJob): Promise<void> {
+    const sms = this.stripMetadataSettings();
+    const output = await this.processor.processStripMetadata(job.inputFile, sms);
+
+    const summary = await analyzeMetadata(job.inputFile, output.blob, {
+      stripIccProfile: sms.stripIccProfile,
+      retagSrgb: sms.retagSrgb,
+      outputFormat: sms.outputFormat,
+    });
+
+    const warnings: string[] = [];
+    if (summary.bytesSaved > 0) {
+      warnings.push(`Saved ${this.formatBytesForJob(summary.bytesSaved)} (${this.percentSaved(summary.beforeBytes, summary.afterBytes)} reduction).`);
+    }
+    if (summary.headerFieldsRemoved.length > 0) {
+      warnings.push(`Removed: ${summary.headerFieldsRemoved.join(', ')}.`);
+    }
+    warnings.push(summary.detectionNote);
+
+    this.jobs.update((currentJobs) =>
+      currentJobs.map((j) =>
+        j.id === job.id
+          ? {
+              ...j,
+              status: 'done' as const,
+              outputBlob: output.blob,
+              outputBytes: output.bytes,
+              outputName: output.filename,
+              width: output.width,
+              height: output.height,
+              warnings,
             }
           : j,
       ),
@@ -349,6 +398,23 @@ export class ToolWorkspace {
     anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  private formatBytesForJob(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    const units = ['KB', 'MB', 'GB'];
+    let size = bytes / 1024;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+    return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+  }
+
+  private percentSaved(before: number, after: number): string {
+    if (before === 0) return '0%';
+    return `${Math.round((1 - after / before) * 100)}%`;
   }
 
   private outputNameFor(fileName: string): string {

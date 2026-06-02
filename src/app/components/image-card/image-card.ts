@@ -12,6 +12,15 @@ import { ImageJob } from '../../models/image-job';
 export class ImageCard {
   readonly job = input.required<ImageJob>();
 
+  protected readonly hasWarnings = computed(() => {
+    const warnings = this.job().warnings;
+    return warnings !== undefined && warnings.length > 0;
+  });
+
+  protected readonly warningsList = computed(() =>
+    this.job().warnings ?? [],
+  );
+
   protected readonly statusLabel = computed(() => {
     const status = this.job().status;
     return status.charAt(0).toUpperCase() + status.slice(1);

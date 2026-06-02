@@ -64,6 +64,11 @@
             [settings]="faviconSettings()"
             (settingsChange)="onFaviconSettingsChange($event)"
           />
+        } @else if (tool().slug === 'strip-metadata') {
+          <app-strip-metadata-controls
+            [settings]="stripMetadataSettings()"
+            (settingsChange)="onStripMetadataSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>
