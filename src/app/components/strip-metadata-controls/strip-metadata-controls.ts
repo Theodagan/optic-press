@@ -24,20 +24,6 @@ export class StripMetadataControls {
 
   protected readonly formatOrder: readonly string[] = ['same', 'webp', 'jpeg', 'png', 'avif'];
 
-  protected onIccChange(checked: boolean): void {
-    this.settingsChange.emit({
-      ...this.settings(),
-      stripIccProfile: checked,
-    });
-  }
-
-  protected onSrgbChange(checked: boolean): void {
-    this.settingsChange.emit({
-      ...this.settings(),
-      retagSrgb: checked,
-    });
-  }
-
   protected onFormatChange(format: string): void {
     this.settingsChange.emit({
       ...this.settings(),

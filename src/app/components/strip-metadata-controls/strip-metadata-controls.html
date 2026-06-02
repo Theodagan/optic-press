@@ -1,32 +1,10 @@
 <fieldset class="strip-metadata-controls__group">
   <legend class="strip-metadata-controls__legend">Metadata removal</legend>
   <p class="strip-metadata-controls__info">
-    EXIF data is always stripped via canvas redraw.
+    EXIF data is always stripped via canvas redraw. Color profile and ICC
+    information cannot be preserved or selectively removed with browser canvas
+    APIs alone.
   </p>
-</fieldset>
-
-<fieldset class="strip-metadata-controls__group">
-  <legend class="strip-metadata-controls__legend">Color profile</legend>
-
-  <label class="strip-metadata-controls__checkbox-label">
-    <input
-      type="checkbox"
-      class="strip-metadata-controls__checkbox"
-      [checked]="settings().stripIccProfile"
-      (change)="onIccChange($any($event.target).checked)"
-    />
-    Strip ICC color profile
-  </label>
-
-  <label class="strip-metadata-controls__checkbox-label">
-    <input
-      type="checkbox"
-      class="strip-metadata-controls__checkbox"
-      [checked]="settings().retagSrgb"
-      (change)="onSrgbChange($any($event.target).checked)"
-    />
-    Re-tag as sRGB
-  </label>
 </fieldset>
 
 <fieldset class="strip-metadata-controls__group">
