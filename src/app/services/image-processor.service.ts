@@ -69,13 +69,14 @@ export class ImageProcessorService {
 
   private async stripMetadataViaRedraw(blob: Blob): Promise<Blob> {
     const source = await createImageBitmap(blob);
-    const canvas = await this.drawToCanvas(source);
-    const result = canvas instanceof OffscreenCanvas
-      ? await canvas.convertToBlob({ type: blob.type })
-      : await this.canvasToBlob(canvas as HTMLCanvasElement, blob.type);
-
-    source.close();
-    return result;
+    try {
+      const canvas = await this.drawToCanvas(source);
+      return canvas instanceof OffscreenCanvas
+        ? await canvas.convertToBlob({ type: blob.type })
+        : await this.canvasToBlob(canvas as HTMLCanvasElement, blob.type);
+    } finally {
+      source.close();
+    }
   }
 
   private canvasToBlob(
@@ -147,64 +148,66 @@ export class ImageProcessorService {
 
   async processMainThread(file: File, settings: ImageProcessingSettings): Promise<Blob> {
     const source = await this.loadImage(file);
-    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
-    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
-    const dimensions = settings.width !== undefined || settings.height !== undefined
-      ? { width: settings.width ?? inputWidth, height: settings.height ?? inputHeight }
-      : { width: inputWidth, height: inputHeight };
+      const dimensions = settings.width !== undefined || settings.height !== undefined
+        ? { width: settings.width ?? inputWidth, height: settings.height ?? inputHeight }
+        : { width: inputWidth, height: inputHeight };
 
-    const canvas = await this.drawToCanvas(source, dimensions);
-    const blob = await this.encode(canvas, settings);
-
-    if (source instanceof ImageBitmap) {
-      source.close();
+      const canvas = await this.drawToCanvas(source, dimensions);
+      return await this.encode(canvas, settings);
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
     }
-
-    return blob;
   }
 
   async processCrop(file: File, cropSettings: CropSettings): Promise<Blob> {
     const source = await this.loadImage(file);
-    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
-    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
-    const rect = this.validateCropRect(cropSettings.rect, inputWidth, inputHeight);
+      const rect = this.validateCropRect(cropSettings.rect, inputWidth, inputHeight);
 
-    const canvas = typeof OffscreenCanvas !== 'undefined'
-      ? new OffscreenCanvas(rect.width, rect.height)
-      : document.createElement('canvas');
+      const canvas = typeof OffscreenCanvas !== 'undefined'
+        ? new OffscreenCanvas(rect.width, rect.height)
+        : document.createElement('canvas');
 
-    if (canvas instanceof HTMLCanvasElement) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      if (canvas instanceof HTMLCanvasElement) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+
+      const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+      if (!ctx) {
+        throw new Error('Failed to get 2d context from canvas');
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        source,
+        rect.x, rect.y, rect.width, rect.height,
+        0, 0, rect.width, rect.height,
+      );
+
+      const encodeSettings: ImageProcessingSettings = {
+        format: cropSettings.outputFormat,
+        quality: cropSettings.quality,
+        width: rect.width,
+        height: rect.height,
+      };
+
+      return this.encode(canvas, encodeSettings);
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
     }
-
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
-    if (!ctx) {
-      throw new Error('Failed to get 2d context from canvas');
-    }
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(
-      source,
-      rect.x, rect.y, rect.width, rect.height,
-      0, 0, rect.width, rect.height,
-    );
-
-    if (source instanceof ImageBitmap) {
-      source.close();
-    }
-
-    const encodeSettings: ImageProcessingSettings = {
-      format: cropSettings.outputFormat,
-      quality: cropSettings.quality,
-      width: rect.width,
-      height: rect.height,
-    };
-
-    return this.encode(canvas, encodeSettings);
   }
 
   private validateCropRect(rect: CropRect, imgWidth: number, imgHeight: number): CropRect {
@@ -226,43 +229,45 @@ export class ImageProcessorService {
     settings: StripMetadataSettings,
   ): Promise<ProcessingOutput> {
     const source = await this.loadImage(file);
-    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
-    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
-    const canvas = await this.drawToCanvas(source, {
-      width: inputWidth,
-      height: inputHeight,
-    });
+      const canvas = await this.drawToCanvas(source, {
+        width: inputWidth,
+        height: inputHeight,
+      });
 
-    if (source instanceof ImageBitmap) {
-      source.close();
+      const inputMime = file.type || this.inferMimeFromName(file.name);
+      const outputFormat = settings.outputFormat === 'same'
+        ? this.formatFromMime(inputMime)
+        : settings.outputFormat;
+      const outputMime = this.mimeTypeFor(outputFormat);
+
+      const blob = canvas instanceof OffscreenCanvas
+        ? await canvas.convertToBlob({ type: outputMime, quality: settings.quality / 100 })
+        : await this.canvasToBlob(canvas as HTMLCanvasElement, outputMime, settings.quality / 100);
+
+      const ext = outputFormat === 'jpeg' ? '.jpg' : `.${outputFormat}`;
+      const dotIndex = file.name.lastIndexOf('.');
+      const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+      const filename = settings.outputFormat === 'same'
+        ? `${baseName}-stripped${dotIndex > 0 ? file.name.slice(dotIndex) : ''}`
+        : `${baseName}-stripped${ext}`;
+
+      return {
+        blob,
+        filename,
+        mimeType: outputMime,
+        bytes: blob.size,
+        width: inputWidth,
+        height: inputHeight,
+      };
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
     }
-
-    const inputMime = file.type || this.inferMimeFromName(file.name);
-    const outputFormat = settings.outputFormat === 'same'
-      ? this.formatFromMime(inputMime)
-      : settings.outputFormat;
-    const outputMime = this.mimeTypeFor(outputFormat);
-
-    const blob = canvas instanceof OffscreenCanvas
-      ? await canvas.convertToBlob({ type: outputMime, quality: settings.quality / 100 })
-      : await this.canvasToBlob(canvas as HTMLCanvasElement, outputMime, settings.quality / 100);
-
-    const ext = outputFormat === 'jpeg' ? '.jpg' : `.${outputFormat}`;
-    const dotIndex = file.name.lastIndexOf('.');
-    const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
-    const filename = settings.outputFormat === 'same'
-      ? `${baseName}-stripped${dotIndex > 0 ? file.name.slice(dotIndex) : ''}`
-      : `${baseName}-stripped${ext}`;
-
-    return {
-      blob,
-      filename,
-      mimeType: outputMime,
-      bytes: blob.size,
-      width: inputWidth,
-      height: inputHeight,
-    };
   }
 
   private inferMimeFromName(name: string): string {
