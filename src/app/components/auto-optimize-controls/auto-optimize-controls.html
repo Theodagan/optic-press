@@ -1,0 +1,36 @@
+<fieldset class="auto-optimize-controls__group">
+  <legend class="auto-optimize-controls__legend">Target profile</legend>
+  <select
+    class="auto-optimize-controls__select"
+    [value]="settings().targetProfile"
+    (change)="onProfileChange($any($event.target).value)"
+  >
+    @for (option of profileOptions; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </select>
+</fieldset>
+
+<fieldset class="auto-optimize-controls__group">
+  <legend class="auto-optimize-controls__legend">Max dimension (px)</legend>
+  <input
+    type="number"
+    class="auto-optimize-controls__input"
+    min="0"
+    [value]="settings().maxDimension"
+    (input)="onMaxDimensionChange($any($event.target).value)"
+  />
+</fieldset>
+
+<fieldset class="auto-optimize-controls__group">
+  <legend class="auto-optimize-controls__legend">Format lock</legend>
+  <select
+    class="auto-optimize-controls__select"
+    [value]="formatLockValue()"
+    (change)="onFormatLockChange($any($event.target).value)"
+  >
+    @for (option of formatOptions; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </select>
+</fieldset>

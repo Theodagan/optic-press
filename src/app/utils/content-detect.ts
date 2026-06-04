@@ -3,12 +3,12 @@ import { ImageProcessorService } from '../services/image-processor.service';
 
 export interface ContentAnalysis {
   readonly variance: number;
-  readonly isLowContent: boolean;
-  readonly luminanceMean: number;
+  readonly isPhoto: boolean;
+  readonly isGraphic: boolean;
 }
 
-const SAMPLE_SIZE = 32;
-const LOW_CONTENT_VARIANCE_THRESHOLD = 15;
+const SAMPLE_SIZE = 100;
+const PHOTO_VARIANCE_THRESHOLD = 1500;
 
 export async function analyzeContent(
   source: ImageSource,
@@ -22,32 +22,29 @@ export async function analyzeContent(
     : (canvas as HTMLCanvasElement).getContext('2d') as CanvasRenderingContext2D | null);
 
   if (!ctx) {
-    return { variance: 0, isLowContent: true, luminanceMean: 0 };
+    return { variance: 0, isPhoto: false, isGraphic: true };
   }
 
   const imageData = ctx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
   const pixels = imageData.data;
 
-  const luminanceValues: number[] = [];
+  const rgbValues: number[] = [];
   for (let i = 0; i < pixels.length; i += 4) {
-    const r = pixels[i];
-    const g = pixels[i + 1];
-    const b = pixels[i + 2];
-    luminanceValues.push(0.299 * r + 0.587 * g + 0.114 * b);
+    rgbValues.push(pixels[i], pixels[i + 1], pixels[i + 2]);
   }
 
-  const mean = luminanceValues.reduce((sum, v) => sum + v, 0) / luminanceValues.length;
+  const mean = rgbValues.reduce((sum, v) => sum + v, 0) / rgbValues.length;
   const variance =
-    luminanceValues.reduce((sum, v) => sum + (v - mean) ** 2, 0) / luminanceValues.length;
+    rgbValues.reduce((sum, v) => sum + (v - mean) ** 2, 0) / rgbValues.length;
 
   return {
     variance: Math.round(variance * 100) / 100,
-    isLowContent: variance < LOW_CONTENT_VARIANCE_THRESHOLD,
-    luminanceMean: Math.round(mean * 100) / 100,
+    isPhoto: variance > PHOTO_VARIANCE_THRESHOLD,
+    isGraphic: variance <= PHOTO_VARIANCE_THRESHOLD,
   };
 }
 
-export async function isLowContent(source: ImageSource, processor?: ImageProcessorService): Promise<boolean> {
+export async function isPhoto(source: ImageSource, processor?: ImageProcessorService): Promise<boolean> {
   const analysis = await analyzeContent(source, processor);
-  return analysis.isLowContent;
+  return analysis.isPhoto;
 }

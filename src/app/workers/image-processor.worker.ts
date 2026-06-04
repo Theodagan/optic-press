@@ -24,15 +24,17 @@ async function handleRequest(request: WorkerRequest): Promise<WorkerResponse> {
   const blob = new Blob([request.imageData]);
   const imageBitmap = await createImageBitmap(blob);
 
-  const width = request.width ?? imageBitmap.width;
-  const height = request.height ?? imageBitmap.height;
+  try {
+    const width = request.width ?? imageBitmap.width;
+    const height = request.height ?? imageBitmap.height;
 
-  const outputBlob = await processImage(imageBitmap, width, height, request.format, request.quality);
-  const buffer = await outputBlob.arrayBuffer();
+    const outputBlob = await processImage(imageBitmap, width, height, request.format, request.quality);
+    const buffer = await outputBlob.arrayBuffer();
 
-  imageBitmap.close();
-
-  return { blob: buffer, type: outputBlob.type };
+    return { blob: buffer, type: outputBlob.type };
+  } finally {
+    imageBitmap.close();
+  }
 }
 
 async function processImage(

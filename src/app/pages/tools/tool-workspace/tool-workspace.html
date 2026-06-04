@@ -44,6 +44,37 @@
             [settings]="convertSettings()"
             (settingsChange)="onConvertSettingsChange($event)"
           />
+        } @else if (tool().slug === 'resize') {
+          <app-resize-controls
+            [settings]="resizeSettings()"
+            (settingsChange)="onResizeSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'compress') {
+          <app-compress-controls
+            [settings]="compressSettings()"
+            (settingsChange)="onCompressSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'auto-optimize') {
+          <app-auto-optimize-controls
+            [settings]="autoOptimizeSettings()"
+            (settingsChange)="onAutoOptimizeSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'favicon') {
+          <app-favicon-controls
+            [settings]="faviconSettings()"
+            (settingsChange)="onFaviconSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'strip-metadata') {
+          <app-strip-metadata-controls
+            [settings]="stripMetadataSettings()"
+            (settingsChange)="onStripMetadataSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'crop') {
+          <app-crop-controls
+            [settings]="cropSettings()"
+            [previewImage]="cropPreviewFile()"
+            (settingsChange)="onCropSettingsChange($event)"
+          />
         } @else {
           <div class="option-placeholder">
             <label>

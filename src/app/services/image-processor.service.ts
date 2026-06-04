@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import type { ImageProcessingSettings } from '../models/processing-settings';
 import type { Dimensions } from '../models/dimensions';
+import type { StripMetadataSettings } from '../models/strip-metadata-settings';
+import type { ProcessingOutput } from '../models/processing-output';
+import type { ImageFormat } from '../models/processing-settings';
+import type { CropRect, CropSettings } from '../models/crop-settings';
 
 export type ImageSource = ImageBitmap | HTMLImageElement;
 export type CanvasLike = HTMLCanvasElement | OffscreenCanvas;
@@ -65,16 +69,21 @@ export class ImageProcessorService {
 
   private async stripMetadataViaRedraw(blob: Blob): Promise<Blob> {
     const source = await createImageBitmap(blob);
-    const canvas = await this.drawToCanvas(source);
-    const result = canvas instanceof OffscreenCanvas
-      ? await canvas.convertToBlob({ type: blob.type })
-      : await this.canvasToBlob(canvas as HTMLCanvasElement, blob.type);
-
-    source.close();
-    return result;
+    try {
+      const canvas = await this.drawToCanvas(source);
+      return canvas instanceof OffscreenCanvas
+        ? await canvas.convertToBlob({ type: blob.type })
+        : await this.canvasToBlob(canvas as HTMLCanvasElement, blob.type);
+    } finally {
+      source.close();
+    }
   }
 
-  private canvasToBlob(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {
+  private canvasToBlob(
+    canvas: HTMLCanvasElement,
+    mimeType: string,
+    quality?: number,
+  ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -85,21 +94,9 @@ export class ImageProcessorService {
           }
         },
         mimeType,
+        quality,
       );
     });
-  }
-
-  private mimeTypeFor(format: ImageProcessingSettings['format']): string {
-    switch (format) {
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'avif':
-        return 'image/avif';
-    }
   }
 
   get isWorkerSupported(): boolean {
@@ -151,21 +148,162 @@ export class ImageProcessorService {
 
   async processMainThread(file: File, settings: ImageProcessingSettings): Promise<Blob> {
     const source = await this.loadImage(file);
-    const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
-    const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
-    const dimensions = settings.width !== undefined || settings.height !== undefined
-      ? { width: settings.width ?? inputWidth, height: settings.height ?? inputHeight }
-      : { width: inputWidth, height: inputHeight };
+      const dimensions = settings.width !== undefined || settings.height !== undefined
+        ? { width: settings.width ?? inputWidth, height: settings.height ?? inputHeight }
+        : { width: inputWidth, height: inputHeight };
 
-    const canvas = await this.drawToCanvas(source, dimensions);
-    const blob = await this.encode(canvas, settings);
+      const canvas = await this.drawToCanvas(source, dimensions);
+      return await this.encode(canvas, settings);
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
+    }
+  }
 
-    if (source instanceof ImageBitmap) {
-      source.close();
+  async processCrop(file: File, cropSettings: CropSettings): Promise<Blob> {
+    const source = await this.loadImage(file);
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+
+      const rect = this.validateCropRect(cropSettings.rect, inputWidth, inputHeight);
+
+      const canvas = typeof OffscreenCanvas !== 'undefined'
+        ? new OffscreenCanvas(rect.width, rect.height)
+        : document.createElement('canvas');
+
+      if (canvas instanceof HTMLCanvasElement) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+
+      const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+      if (!ctx) {
+        throw new Error('Failed to get 2d context from canvas');
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        source,
+        rect.x, rect.y, rect.width, rect.height,
+        0, 0, rect.width, rect.height,
+      );
+
+      const encodeSettings: ImageProcessingSettings = {
+        format: cropSettings.outputFormat,
+        quality: cropSettings.quality,
+        width: rect.width,
+        height: rect.height,
+      };
+
+      return this.encode(canvas, encodeSettings);
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
+    }
+  }
+
+  private validateCropRect(rect: CropRect, imgWidth: number, imgHeight: number): CropRect {
+    if (rect.width <= 0 || rect.height <= 0) {
+      return { x: 0, y: 0, width: imgWidth, height: imgHeight };
     }
 
-    return blob;
+    let { x, y, width, height } = rect;
+    x = Math.max(0, Math.min(x, imgWidth - 1));
+    y = Math.max(0, Math.min(y, imgHeight - 1));
+    width = Math.min(width, imgWidth - x);
+    height = Math.min(height, imgHeight - y);
+
+    return { x, y, width, height };
+  }
+
+  async processStripMetadata(
+    file: File,
+    settings: StripMetadataSettings,
+  ): Promise<ProcessingOutput> {
+    const source = await this.loadImage(file);
+    try {
+      const inputWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+      const inputHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+
+      const canvas = await this.drawToCanvas(source, {
+        width: inputWidth,
+        height: inputHeight,
+      });
+
+      const inputMime = file.type || this.inferMimeFromName(file.name);
+      const outputFormat = settings.outputFormat === 'same'
+        ? this.formatFromMime(inputMime)
+        : settings.outputFormat;
+      const outputMime = this.mimeTypeFor(outputFormat);
+
+      const blob = canvas instanceof OffscreenCanvas
+        ? await canvas.convertToBlob({ type: outputMime, quality: settings.quality / 100 })
+        : await this.canvasToBlob(canvas as HTMLCanvasElement, outputMime, settings.quality / 100);
+
+      const ext = outputFormat === 'jpeg' ? '.jpg' : `.${outputFormat}`;
+      const dotIndex = file.name.lastIndexOf('.');
+      const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+      const filename = settings.outputFormat === 'same'
+        ? `${baseName}-stripped${dotIndex > 0 ? file.name.slice(dotIndex) : ''}`
+        : `${baseName}-stripped${ext}`;
+
+      return {
+        blob,
+        filename,
+        mimeType: outputMime,
+        bytes: blob.size,
+        width: inputWidth,
+        height: inputHeight,
+      };
+    } finally {
+      if (source instanceof ImageBitmap) {
+        source.close();
+      }
+    }
+  }
+
+  private inferMimeFromName(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+    const extMap: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      avif: 'image/avif',
+      svg: 'image/svg+xml',
+      gif: 'image/gif',
+      bmp: 'image/bmp',
+    };
+    return extMap[ext] ?? 'image/png';
+  }
+
+  private formatFromMime(mime: string): ImageFormat {
+    if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpeg';
+    if (mime.includes('png')) return 'png';
+    if (mime.includes('webp')) return 'webp';
+    if (mime.includes('avif')) return 'avif';
+    return 'png';
+  }
+
+  private mimeTypeFor(format: ImageProcessingSettings['format']): string {
+    switch (format) {
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'avif':
+        return 'image/avif';
+    }
   }
 
   private async loadImageFallback(file: File): Promise<HTMLImageElement> {
