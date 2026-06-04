@@ -8,7 +8,6 @@
       </svg>
       <span class="app-logo__text">OPTICPRESS</span>
     </a>
-    <span class="app-header__tag">code</span>
   </div>
 </header>
 
@@ -22,7 +21,52 @@
   <section class="tool-grid" aria-label="Image tools">
     @for (tool of tools; track tool.slug) {
       <a class="tool-card" [routerLink]="tool.slug">
-        <span class="tool-card__icon" aria-hidden="true">{{ tool.icon }}</span>
+        <span class="tool-card__icon" aria-hidden="true">
+          @switch (tool.icon) {
+            @case ('Spark') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+            }
+            @case ('Press') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v18M5 10l7-7 7 7M5 14l7 7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            }
+            @case ('Swap') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M7 3l-4 4 4 4M17 21l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 7h14a4 4 0 010 8h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            }
+            @case ('Frame') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+              </svg>
+            }
+            @case ('Grid') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                <rect x="13" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                <rect x="4" y="13" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                <rect x="13" y="13" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            }
+            @case ('Clean') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 17l4 4 10-10-4-4L3 17z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M14 8l6-6 2 2-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            }
+            @case ('Crop') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 2v16h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M2 6h16v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/>
+              </svg>
+            }
+          }
+        </span>
         <span class="tool-card__name">{{ tool.name }}</span>
         <span class="tool-card__description">{{ tool.description }}</span>
       </a>

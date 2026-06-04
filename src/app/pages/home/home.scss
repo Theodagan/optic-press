@@ -37,17 +37,6 @@
   color: var(--ts-color-accent);
 }
 
-.app-header__tag {
-  align-items: center;
-  background: var(--ts-color-surface-high);
-  border-radius: var(--ts-radius-default);
-  color: var(--ts-color-accent-dark);
-  display: flex;
-  font-size: 0.875rem;
-  font-weight: var(--ts-weight-semibold);
-  padding: 0.25rem 0.5rem;
-}
-
 .home-shell {
   margin: 0 auto;
   max-width: var(--ts-max-width);
@@ -120,13 +109,8 @@
   border-radius: var(--ts-radius-pill);
   color: var(--ts-color-accent-dark);
   display: flex;
-  font-size: 1.25rem;
-  font-weight: var(--ts-weight-extrabold);
   height: 2.5rem;
   justify-content: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   width: 2.5rem;
 }
 
