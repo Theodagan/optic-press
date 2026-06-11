@@ -48,4 +48,10 @@ export const TOOLS: readonly ToolDefinition[] = [
     description: 'Trim images to the exact composition or ratio you need.',
     icon: 'Crop',
   },
+  {
+    slug: 'responsive-srcset',
+    name: 'Responsive Set',
+    description: 'Split one image into responsive sizes with copy-paste HTML.',
+    icon: 'Screens',
+  },
 ];
