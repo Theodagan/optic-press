@@ -1,0 +1,102 @@
+<fieldset class="srcset-controls__group">
+  <legend class="srcset-controls__legend">Target widths</legend>
+  <ul class="srcset-controls__chips" aria-label="Target widths">
+    @for (width of sortedWidths(); track width) {
+      <li class="srcset-controls__chip">
+        {{ width }}px
+        <button
+          type="button"
+          class="srcset-controls__chip-remove"
+          [attr.aria-label]="'Remove ' + width + 'px'"
+          (click)="onRemoveWidth(width)"
+        >
+          &times;
+        </button>
+      </li>
+    }
+  </ul>
+  <div class="srcset-controls__add-row">
+    <input
+      type="number"
+      class="srcset-controls__input srcset-controls__input--width"
+      min="1"
+      placeholder="e.g. 1440"
+      [value]="newWidth()"
+      (input)="onNewWidthInput($any($event.target).value)"
+      (keydown.enter)="onAddWidth()"
+      aria-label="New width in pixels"
+    />
+    <button type="button" class="srcset-controls__add-btn" (click)="onAddWidth()">Add</button>
+  </div>
+  <p class="srcset-controls__hint">Widths larger than the source image are skipped; the source width is always included.</p>
+</fieldset>
+
+<fieldset class="srcset-controls__group">
+  <legend class="srcset-controls__legend">Formats</legend>
+  @for (format of formatOrder; track format) {
+    <label class="srcset-controls__check-row">
+      <input
+        type="checkbox"
+        [checked]="isFormatSelected(format)"
+        [disabled]="format === 'avif' && !avifSupported()"
+        (change)="onFormatToggle(format, $any($event.target).checked)"
+      />
+      {{ formatLabels[format] }}
+      @if (format === 'avif' && !avifSupported()) {
+        <span class="srcset-controls__hint">(not supported by this browser)</span>
+      }
+    </label>
+  }
+  <p class="srcset-controls__hint">One format produces an &lt;img srcset&gt; snippet; several produce a &lt;picture&gt; snippet.</p>
+</fieldset>
+
+<fieldset class="srcset-controls__group">
+  <legend class="srcset-controls__legend">Quality</legend>
+  <div class="srcset-controls__quality-row">
+    <input
+      type="range"
+      class="srcset-controls__range"
+      min="1"
+      max="100"
+      [value]="settings().quality"
+      (input)="onQualityChange($any($event.target).value)"
+      aria-label="Encoding quality"
+    />
+    <output class="srcset-controls__quality-value">{{ settings().quality }}</output>
+  </div>
+</fieldset>
+
+<fieldset class="srcset-controls__group">
+  <legend class="srcset-controls__legend">sizes attribute</legend>
+  <input
+    type="text"
+    class="srcset-controls__input"
+    [value]="settings().sizesAttribute"
+    (input)="onSizesChange($any($event.target).value)"
+    placeholder="100vw"
+    aria-label="sizes attribute value"
+  />
+</fieldset>
+
+<fieldset class="srcset-controls__group">
+  <legend class="srcset-controls__legend">ZIP contents</legend>
+  <label class="srcset-controls__check-row">
+    <input
+      type="checkbox"
+      [checked]="settings().includeSnippetInZip"
+      (change)="onIncludeSnippetChange($any($event.target).checked)"
+    />
+    Include snippet file
+  </label>
+  @if (settings().includeSnippetInZip) {
+    <select
+      class="srcset-controls__select"
+      [value]="settings().snippetFileType"
+      (change)="onSnippetFileTypeChange($any($event.target).value)"
+      aria-label="Snippet file type"
+    >
+      <option value="html">snippet.html</option>
+      <option value="txt">snippet.txt</option>
+    </select>
+  }
+</fieldset>

@@ -35,6 +35,18 @@
       } @else {
         <p class="empty-state">Upload images to preview the {{ tool().name }} workflow.</p>
       }
+
+      @for (item of srcsetSnippets(); track item.jobId) {
+        <section class="snippet-preview" aria-label="HTML snippet">
+          <div class="snippet-preview__header">
+            <h2 class="snippet-preview__title">HTML snippet — {{ item.fileName }}</h2>
+            <button type="button" class="snippet-preview__copy" (click)="copySnippet(item.jobId)">
+              {{ copiedSnippetJobId() === item.jobId ? 'Copied!' : 'Copy' }}
+            </button>
+          </div>
+          <pre class="snippet-preview__code"><code>{{ item.snippet }}</code></pre>
+        </section>
+      }
     </section>
 
     <aside class="workspace-panel" aria-label="Workspace controls">
@@ -74,6 +86,11 @@
             [settings]="cropSettings()"
             [previewImage]="cropPreviewFile()"
             (settingsChange)="onCropSettingsChange($event)"
+          />
+        } @else if (tool().slug === 'responsive-srcset') {
+          <app-responsive-srcset-controls
+            [settings]="srcsetSettings()"
+            (settingsChange)="onSrcsetSettingsChange($event)"
           />
         } @else {
           <div class="option-placeholder">

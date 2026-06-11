@@ -34,6 +34,10 @@
 - "Images only": ZIP of all generated variants.
 - "Images + snippet": same plus `snippet.html` or `snippet.txt` per the toggle; identical text content either way.
 
+## Follow-up
+
+- Generation currently runs sequentially via the shared processor on the main thread (encode is async through `OffscreenCanvas.convertToBlob`). Per-job status is surfaced through the existing job list. If large width × format matrices cause observable jank, move the matrix into the existing worker path (`processInWorker`) as a follow-up.
+
 ## Testing
 
 - Unit tests for effective-width computation (skip-above-source, source append, dedupe).

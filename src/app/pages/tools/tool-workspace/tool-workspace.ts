@@ -11,6 +11,7 @@ import { DownloadBar } from '../../../components/download-bar/download-bar';
 import { ImageCard } from '../../../components/image-card/image-card';
 import { OutputOptions } from '../../../components/output-options/output-options';
 import { ResizeControls } from '../../../components/resize-controls/resize-controls';
+import { ResponsiveSrcsetControls } from '../../../components/responsive-srcset-controls/responsive-srcset-controls';
 import { UploadZone } from '../../../components/upload-zone/upload-zone';
 import type { AutoOptimizeSettings } from '../../../models/auto-optimize';
 import { DEFAULT_AUTO_OPTIMIZE_SETTINGS, computeTargetBytes } from '../../../models/auto-optimize';
@@ -27,18 +28,22 @@ import type { ImageProcessingSettings } from '../../../models/processing-setting
 import { DEFAULT_SETTINGS } from '../../../models/processing-settings';
 import type { ResizeSettings } from '../../../models/resize-settings';
 import { DEFAULT_RESIZE_SETTINGS } from '../../../models/resize-settings';
+import type { ResponsiveSetResult, SrcsetSettings } from '../../../models/srcset-settings';
+import { DEFAULT_SRCSET_SETTINGS } from '../../../models/srcset-settings';
 import { ToolDefinition } from '../../../models/tool';
 import type { StripMetadataSettings } from '../../../models/strip-metadata-settings';
 import { DEFAULT_STRIP_METADATA_SETTINGS } from '../../../models/strip-metadata-settings';
 import { AutoOptimizeService } from '../../../services/auto-optimize.service';
 import { FaviconService } from '../../../services/favicon.service';
 import { ImageProcessorService, ImageSource } from '../../../services/image-processor.service';
+import { ResponsiveSetService } from '../../../services/responsive-set.service';
 import { ZipService } from '../../../services/zip.service';
 import { isAvifSupported } from '../../../utils/avif-detect';
 import { analyzeContent } from '../../../utils/content-detect';
 import { outputFileNameFor } from '../../../utils/format-mapping';
 import { analyzeMetadata } from '../../../utils/metadata-summary';
 import { computeResizeTarget } from '../../../utils/resize-dimensions';
+import { snippetFileNameFor } from '../../../utils/srcset-snippet';
 
 @Component({
   selector: 'app-tool-workspace',
@@ -53,6 +58,7 @@ import { computeResizeTarget } from '../../../utils/resize-dimensions';
     ImageCard,
     OutputOptions,
     ResizeControls,
+    ResponsiveSrcsetControls,
     RouterLink,
     UploadZone,
   ],
@@ -66,6 +72,7 @@ export class ToolWorkspace {
   private readonly zipService = inject(ZipService);
   private readonly autoOptimize = inject(AutoOptimizeService);
   private readonly faviconService = inject(FaviconService);
+  private readonly responsiveSetService = inject(ResponsiveSetService);
 
   protected readonly tool = computed(() => this.route.snapshot.data['tool'] as ToolDefinition);
   protected readonly jobs = signal<readonly ImageJob[]>([]);
@@ -76,6 +83,9 @@ export class ToolWorkspace {
   protected readonly faviconSettings = signal<FaviconSettings>(DEFAULT_FAVICON_SETTINGS);
   protected readonly stripMetadataSettings = signal<StripMetadataSettings>(DEFAULT_STRIP_METADATA_SETTINGS);
   protected readonly cropSettings = signal<CropSettings>(DEFAULT_CROP_SETTINGS);
+  protected readonly srcsetSettings = signal<SrcsetSettings>(DEFAULT_SRCSET_SETTINGS);
+  protected readonly srcsetResults = signal<ReadonlyMap<string, ResponsiveSetResult>>(new Map());
+  protected readonly copiedSnippetJobId = signal<string | null>(null);
   protected readonly isProcessing = signal(false);
 
   protected readonly hasQueuedJobs = computed(() =>
@@ -106,7 +116,13 @@ export class ToolWorkspace {
                       const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
                       return `${baseName}-favicon.zip`;
                     }
-                  : (file: File) => this.outputNameFor(file.name);
+                  : slug === 'responsive-srcset'
+                    ? (file: File) => {
+                        const dotIndex = file.name.lastIndexOf('.');
+                        const baseName = dotIndex > 0 ? file.name.slice(0, dotIndex) : file.name;
+                        return `${baseName}-srcset.zip`;
+                      }
+                    : (file: File) => this.outputNameFor(file.name);
 
     const queuedJobs = files.map((file) => ({
       id: crypto.randomUUID(),
@@ -148,6 +164,22 @@ export class ToolWorkspace {
     this.cropSettings.set(settings);
   }
 
+  protected onSrcsetSettingsChange(settings: SrcsetSettings): void {
+    this.srcsetSettings.set(settings);
+  }
+
+  protected readonly srcsetSnippets = computed(() => {
+    if (this.tool().slug !== 'responsive-srcset') return [];
+    const results = this.srcsetResults();
+    return this.jobs()
+      .filter((job) => job.status === 'done' && results.has(job.id))
+      .map((job) => ({
+        jobId: job.id,
+        fileName: job.inputFile.name,
+        snippet: results.get(job.id)!.snippet,
+      }));
+  });
+
   protected readonly cropPreviewFile = computed(() => {
     if (this.tool().slug !== 'crop') return null;
     const jobList = this.jobs();
@@ -168,6 +200,8 @@ export class ToolWorkspace {
         try {
           if (this.tool().slug === 'favicon') {
             await this.processFaviconJob(job);
+          } else if (this.tool().slug === 'responsive-srcset') {
+            await this.processResponsiveSetJob(job);
           } else if (this.tool().slug === 'auto-optimize') {
             await this.processAutoOptimizeJob(job);
           } else if (this.tool().slug === 'strip-metadata') {
@@ -277,6 +311,57 @@ export class ToolWorkspace {
           : j,
       ),
     );
+  }
+
+  private async processResponsiveSetJob(job: ImageJob): Promise<void> {
+    const result = await this.responsiveSetService.generateSet(
+      job.inputFile,
+      this.srcsetSettings(),
+    );
+
+    const zipBlob = await this.zipService.buildZipFromFiles(result.files);
+
+    this.srcsetResults.update((results) => new Map(results).set(job.id, result));
+
+    this.jobs.update((currentJobs) =>
+      currentJobs.map((j) =>
+        j.id === job.id
+          ? {
+              ...j,
+              status: 'done' as const,
+              outputBlob: zipBlob,
+              outputBytes: zipBlob.size,
+              width: result.sourceWidth,
+              height: result.sourceHeight,
+            }
+          : j,
+      ),
+    );
+  }
+
+  protected async copySnippet(jobId: string): Promise<void> {
+    const result = this.srcsetResults().get(jobId);
+    if (!result) return;
+
+    try {
+      await navigator.clipboard.writeText(result.snippet);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = result.snippet;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    this.copiedSnippetJobId.set(jobId);
+    setTimeout(() => {
+      if (this.copiedSnippetJobId() === jobId) {
+        this.copiedSnippetJobId.set(null);
+      }
+    }, 2000);
   }
 
   private async processStripMetadataJob(job: ImageJob): Promise<void> {
@@ -407,6 +492,32 @@ export class ToolWorkspace {
   }
 
   protected async requestZip(): Promise<void> {
+    if (this.tool().slug === 'responsive-srcset') {
+      const job = this.jobs().find(
+        (j): j is ImageJob & { outputBlob: Blob; outputName: string } =>
+          j.status === 'done' && !!j.outputBlob && !!j.outputName && this.srcsetResults().has(j.id),
+      );
+      if (!job) return;
+
+      const settings = this.srcsetSettings();
+      if (!settings.includeSnippetInZip) {
+        this.downloadBlob(job.outputBlob, job.outputName);
+        return;
+      }
+
+      const result = this.srcsetResults().get(job.id)!;
+      const mimeType = settings.snippetFileType === 'html' ? 'text/html' : 'text/plain';
+      const files = new Map(result.files);
+      files.set(
+        snippetFileNameFor(settings.snippetFileType),
+        new Blob([result.snippet], { type: mimeType }),
+      );
+
+      const zipBlob = await this.zipService.buildZipFromFiles(files);
+      this.downloadBlob(zipBlob, job.outputName);
+      return;
+    }
+
     if (this.tool().slug === 'favicon') {
       const completed = this.jobs().filter(
         (job): job is ImageJob & { outputBlob: Blob; outputName: string } =>
